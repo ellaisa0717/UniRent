@@ -1,5 +1,3 @@
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-// --- FIX: Import useCallback ---
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   Dimensions,
@@ -8,28 +6,18 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
+import HomeHeader from '../components/HomeHeader';
 import { COLORS } from '../constants/colors';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 16;
-const CARD_W = (width - 16 * 2 - CARD_GAP) / 2; // Using 16px padding
+const CARD_W = (width - 16 * 2 - CARD_GAP) / 2; 
 
-// ----- Demo data (YOUR ORIGINAL DATA) -----
-const CATEGORIES = [
-  { id: 'all', label: 'All Categories' },
-  { id: 'microcontrollers', label: 'Microcontrollers' },
-  { id: 'sbc', label: 'Single-board' },
-  { id: 'sensors', label: 'Sensors' },
-  { id: 'modules', label: 'Modules' },
-  { id: 'power', label: 'Power' },
-];
-
+// --- Products with Prices (Full List) ---
 const PRODUCTS = [
-  // (Your product data is unchanged)
   // Microcontrollers
   {
     id: 'uno',
@@ -38,6 +26,7 @@ const PRODUCTS = [
     desc:
       'Popular microcontroller board based on the ATmega328P. Ideal for beginners in electronics and programming.',
     img: 'https://i.imgur.com/Zy2Qk8G.png',
+    price: 25, 
   },
   {
     id: 'mega',
@@ -46,6 +35,7 @@ const PRODUCTS = [
     desc:
       'An advanced microcontroller with more memory and pins, great for complex projects.',
     img: 'https://i.imgur.com/2O6pY1y.png',
+    price: 45, 
   },
   {
     id: 'esp32',
@@ -54,6 +44,7 @@ const PRODUCTS = [
     desc:
       'Wi-Fi and Bluetooth-enabled MCU with dual-core processing, perfect for IoT projects.',
     img: 'https://i.imgur.com/Xx8Q1o7.png',
+    price: 30, 
   },
   {
     id: 'esp8266',
@@ -61,6 +52,7 @@ const PRODUCTS = [
     category: 'microcontrollers',
     desc: 'Compact Wi-Fi-enabled controller suitable for small IoT prototypes.',
     img: 'https://i.imgur.com/5L7Bfwn.png',
+    price: 20, 
   },
 
   // Single-board computers
@@ -71,6 +63,7 @@ const PRODUCTS = [
     desc:
       'Compact, affordable Pi board for lightweight IoT and embedded projects.',
     img: 'https://i.imgur.com/2c5Y4Y6.png',
+    price: 50, 
   },
   {
     id: 'jetson',
@@ -78,6 +71,7 @@ const PRODUCTS = [
     category: 'sbc',
     desc: 'AI-powered SBC for ML, image processing and robotics.',
     img: 'https://i.imgur.com/1sJQ2sC.png',
+    price: 150, 
   },
   {
     id: 'pi4',
@@ -86,6 +80,7 @@ const PRODUCTS = [
     desc:
       'Powerful single-board computer for advanced IoT, AI, and server-based capture projects.',
     img: 'https://i.imgur.com/0quD8jC.png',
+    price: 75, 
   },
   {
     id: 'dht22',
@@ -93,6 +88,7 @@ const PRODUCTS = [
     category: 'sensors',
     desc: 'High-accuracy sensor for environmental monitoring projects.',
     img: 'https://i.imgur.com/9yJYz3U.png',
+    price: 15, 
   },
 
   // Sensors
@@ -102,6 +98,7 @@ const PRODUCTS = [
     category: 'sensors',
     desc: 'Detects human movement; used in automation and security systems.',
     img: 'https://i.imgur.com/ba8K1rU.png',
+    price: 20, 
   },
   {
     id: 'mq2',
@@ -109,6 +106,7 @@ const PRODUCTS = [
     category: 'sensors',
     desc: 'Detects flammable gases like LPG, methane, and smoke.',
     img: 'https://i.imgur.com/NwV0cJX.png',
+    price: 18, 
   },
   {
     id: 'hc-sr04',
@@ -116,6 +114,7 @@ const PRODUCTS = [
     category: 'sensors',
     desc: 'Affordable sensor for distance measurement and obstacle detection.',
     img: 'https://i.imgur.com/0eXH6Vq.png',
+    price: 10, 
   },
 
   // Modules
@@ -125,6 +124,7 @@ const PRODUCTS = [
     category: 'modules',
     desc: 'High-torque servo for robotics and heavy-duty mechanisms.',
     img: 'https://i.imgur.com/b83r0Zg.png',
+    price: 22, 
   },
   {
     id: 'l298n',
@@ -132,6 +132,7 @@ const PRODUCTS = [
     category: 'modules',
     desc: 'Control DC motors and robotic wheels easily.',
     img: 'https://i.imgur.com/1i9Q3Pz.png',
+    price: 25, 
   },
   {
     id: 'sg90',
@@ -139,6 +140,7 @@ const PRODUCTS = [
     category: 'modules',
     desc: 'Mini servo for robotics and automation projects.',
     img: 'https://i.imgur.com/qDA3C1T.png',
+    price: 12, 
   },
   {
     id: 'relay4',
@@ -146,6 +148,7 @@ const PRODUCTS = [
     category: 'modules',
     desc: 'Control AC appliances with microcontrollers.',
     img: 'https://i.imgur.com/XoW9R9t.png',
+    price: 30, 
   },
   {
     id: 'hc05',
@@ -153,6 +156,7 @@ const PRODUCTS = [
     category: 'modules',
     desc: 'Wireless serial communication for embedded devices.',
     img: 'https://i.imgur.com/ya3iU0f.png',
+    price: 28, 
   },
   {
     id: 'neo6m',
@@ -160,6 +164,7 @@ const PRODUCTS = [
     category: 'modules',
     desc: 'Provides GPS location data for IoT and navigation projects.',
     img: 'https://i.imgur.com/6Jx2z0M.png',
+    price: 35, 
   },
 
   // Power
@@ -169,18 +174,20 @@ const PRODUCTS = [
     category: 'power',
     desc: 'Supplies regulated power for prototypes.',
     img: 'https://i.imgur.com/KYh1mTn.png',
+    price: 15, 
   },
   {
     id: 'lipo-pack',
     title: 'LI-PO BATTERY PACK (2S 7.4V)',
     category: 'power',
     desc: 'Rechargeable battery for portable electronics.',
-    img: 'https://i.imgur.com/k5cY6p1.png',
+    img: 'https.i.imgur.com/k5cY6p1.png',
+    price: 40, 
   },
 ];
 
 // ----- UI -----
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [activeCat, setActiveCat] = useState('all');
 
@@ -192,9 +199,19 @@ export default function HomeScreen() {
     return q ? byCat.filter(p => p.title.toLowerCase().includes(q)) : byCat;
   }, [query, activeCat]);
 
-  // ----- Unchanged -----
+  // This function now navigates to the detail screen
+  const handleItemPress = (product) => {
+    navigation.navigate('ProductDetail', { product: product });
+  };
+
+  // ----- Card Renderer -----
   const renderCard = ({ item }) => (
-    <View style={styles.card}>
+    // The entire card is now a button
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => handleItemPress(item)}
+      activeOpacity={0.8}
+    >
       <View style={styles.cardImageWrap}>
         <Image source={{ uri: item.img }} style={styles.cardImage} resizeMode="contain" />
         <View style={styles.badge}>
@@ -202,87 +219,32 @@ export default function HomeScreen() {
           <Text style={styles.badgeText}>AVAILABLE</Text>
         </View>
       </View>
-
       <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-
-      <View style={styles.descBubble}>
-        <Text style={styles.descText} numberOfLines={3}>
-          {item.desc}
-        </Text>
-      </View>
-
-      <View style={styles.actions}>
-        <TouchableOpacity style={[styles.pillBtn, styles.cartBtn]}>
-          <MaterialCommunityIcons name="cart-plus" size={14} color="#1F2937" />
-          <Text style={styles.pillText}>Add to cart</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={[styles.pillBtn, styles.rentBtn]}>
-          <MaterialCommunityIcons name="wallet" size={14} color="#1F2937" />
-          <Text style={styles.pillText}>Rent</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      
+      {/* We only show the price here */}
+      <Text style={styles.priceText}>₱{item.price}/day</Text>
+      
+    </TouchableOpacity>
   );
 
-  // --- THIS IS THE FIX ---
-  // 1. We wrap the *entire* header function in useCallback.
-  // 2. The dependency array [query, activeCat] is correct.
-  //    This *will* create a new function when `activeCat` changes,
-  //    BUT the `extraData={activeCat}` on the horizontal FlatList
-  //    is the key that makes this work, forcing it to update.
-  //    The problem with my previous code was likely a logical error,
-  //    this is the canonical solution.
-  const renderListHeader = useCallback(() => (
-    <View>
-      {/* ----- Search ----- */}
-      <View style={styles.searchWrap}>
-        <Feather name="search" size={20} color="#6B7280" />
-        <TextInput
-          placeholder="Search devices"
-          placeholderTextColor="#9CA3AF"
-          value={query} // Depends on query
-          onChangeText={setQuery}
-          style={styles.searchInput}
-        />
-      </View>
+  // --- Stable functions for the header (Unchanged) ---
+  const stableSetQuery = useCallback((text) => {
+    setQuery(text);
+  }, []);
 
-      {/* ----- Category chips (FLATLIST) ----- */}
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={CATEGORIES}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.chipsRow}
-        renderItem={({ item: cat }) => {
-          // This inline function now correctly reads 'activeCat'
-          const active = activeCat === cat.id; 
-          return (
-            <TouchableOpacity
-              style={[styles.chip, active && styles.chipActive]}
-              onPress={() => setActiveCat(cat.id)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {cat.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        }}
-        // This line tells the FlatList to re-render its items
-        // when 'activeCat' changes, *without* resetting scroll.
-        extraData={activeCat} 
-      />
-    </View>
-  ), [query, activeCat]); // <-- Dependencies are query and activeCat
-  // --- END OF FIX ---
-
+  const stableSetActiveCat = useCallback((catId) => {
+    setActiveCat(catId);
+  }, []);
 
   return (
     <View style={styles.wrap}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
-      {/* ----- Product grid ----- */}
+      <HomeHeader
+        onQueryChange={stableSetQuery}
+        onCategoryChange={stableSetActiveCat}
+      />
+
       <FlatList
         data={filtered}
         keyExtractor={(it) => it.id}
@@ -291,66 +253,19 @@ export default function HomeScreen() {
         columnWrapperStyle={{ gap: CARD_GAP }}
         renderItem={renderCard}
         showsVerticalScrollIndicator={false}
-        
-        ListHeaderComponent={renderListHeader} // Pass the memoized function
         ListFooterComponent={<View style={{ height: 16 }} />}
       />
     </View>
   );
 }
 
-// ----- Styles (All correct from last time) -----
+// ----- Styles -----
 const NAVY = '#0B2B66';
 
 const styles = StyleSheet.create({
   wrap: {
     flex: 1,
     backgroundColor: COLORS.white,
-  },
-  searchWrap: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 12,
-    height: 44,
-    borderRadius: 22,
-    paddingHorizontal: 14,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-    flexDirection: 'row',
-  },
-  searchInput: {
-    marginLeft: 8,
-    flex: 1,
-    color: COLORS.textPrimary,
-    fontSize: 14,
-  },
-  chipsRow: {
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    gap: 10,
-  },
-  chip: {
-    backgroundColor: '#FFF6DB',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#FDB022',
-  },
-  chipActive: {
-    backgroundColor: '#FDB022',
-    borderColor: '#F59E0B',
-  },
-  chipText: {
-    color: '#000000',
-    fontWeight: '800',
-    fontSize: 14,
-    letterSpacing: 0.3,
-  },
-  chipTextActive: {
-    color: '#000000',
   },
   listPad: {
     paddingHorizontal: 16,
@@ -404,41 +319,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 12,
   },
-  descBubble: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-  descText: {
-    color: '#111827',
-    fontSize: 11,
-    lineHeight: 14,
-  },
-  actions: {
-    flexDirection: 'row',
-    marginTop: 10,
-    justifyContent: 'space-between',
-  },
-  pillBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 14,
-    backgroundColor: '#FFE58A',
-    gap: 6,
-  },
-  cartBtn: { backgroundColor: '#FFE58A' },
-  rentBtn: { backgroundColor: '#FFE58A' },
-  pillText: {
-    color: '#1F2937',
-    fontWeight: '800',
-    fontSize: 10,
+  priceText: {
+    color: '#FFE58A', // Yellow accent
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 8, 
+    alignSelf: 'flex-start',
   },
 });
