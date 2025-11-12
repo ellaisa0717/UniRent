@@ -10,7 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { useCart } from '../context/CartContext'; // <-- Import the hook
+import { useCart } from '../context/CartContext';
 
 // Define colors
 const NAVY = '#0B2B66';
@@ -22,7 +22,6 @@ const BORDER_LIGHT = '#E5E7EB';
 const YELLOW_PRIMARY = '#FDB022';
 
 // --- Cart Item Component ---
-// Now receives functions from the context
 const CartItem = ({ item, onRemove, onUpdateQty, onToggleCheck }) => {
   return (
     <View style={styles.card}>
@@ -65,7 +64,6 @@ const CartItem = ({ item, onRemove, onUpdateQty, onToggleCheck }) => {
 
 // --- Main Cart Screen ---
 export default function CartScreen({ navigation }) {
-  // Get all data and functions from the Cart Context
   const {
     cartItems,
     removeFromCart,
@@ -76,17 +74,19 @@ export default function CartScreen({ navigation }) {
     isAllChecked,
   } = useCart();
 
+  // Get only the items that are checked
+  const checkedItemsCount = cartItems.filter(item => item.checked).length;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={GRAY_LIGHT_BG} />
       
       <FlatList
-        data={cartItems} // <-- Use live data from context
+        data={cartItems} 
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <CartItem
             item={item}
-            // Pass context functions down
             onRemove={() => removeFromCart(item.id)}
             onUpdateQty={(amount) => updateQuantity(item.id, amount)}
             onToggleCheck={() => toggleItemChecked(item.id)}
@@ -106,7 +106,6 @@ export default function CartScreen({ navigation }) {
       />
 
       {/* --- Footer --- */}
-      {/* Only show footer if there are items */}
       {cartItems.length > 0 && (
         <View style={styles.footer}>
           <TouchableOpacity style={styles.checkAllRow} onPress={toggleSelectAll}>
@@ -120,10 +119,17 @@ export default function CartScreen({ navigation }) {
           
           <View style={styles.totalRow}>
             <Text style={styles.totalText}>Total: </Text>
-            <Text style={styles.totalPrice}>₱{totalPrice}</Text>
+            <Text style={styles.totalPrice}>₱{totalPrice.toFixed(2)}</Text>
           </View>
 
-          <TouchableOpacity style={styles.checkoutButton}>
+          <TouchableOpacity 
+            style={[
+              styles.checkoutButton, 
+              checkedItemsCount === 0 && styles.checkoutButtonDisabled // Disable button if no items are checked
+            ]}
+            onPress={() => navigation.navigate('Checkout')}
+            disabled={checkedItemsCount === 0}
+          >
             <Text style={styles.checkoutText}>Check Out</Text>
           </TouchableOpacity>
         </View>
@@ -140,7 +146,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
-    paddingBottom: 100, // Space for the footer
+    paddingBottom: 100,
   },
   card: {
     backgroundColor: WHITE,
@@ -223,7 +229,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingBottom: 24, // Extra padding for home bar
+    paddingBottom: 24, 
     backgroundColor: WHITE,
     borderTopWidth: 1,
     borderTopColor: BORDER_LIGHT,
@@ -257,9 +263,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
   },
+  checkoutButtonDisabled: {
+    backgroundColor: '#FDE68A', // A lighter yellow
+  },
   checkoutText: {
     color: TEXT_PRIMARY,
     fontWeight: 'bold',
     fontSize: 15,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: GRAY_MEDIUM,
+    marginTop: 15,
+  },
+  browseText: {
+    fontSize: 16,
+    color: NAVY,
+    fontWeight: 'bold',
+    marginTop: 10,
+    padding: 10,
   },
 });

@@ -13,7 +13,7 @@ import {
 import { useCart } from '../context/CartContext'; // To add to cart
 
 // Define colors
-const NAVY = '#0029F3';
+const NAVY = '#0B2B66';
 const WHITE = '#FFFFFF';
 const GRAY_LIGHT_BG = '#F3F4F6';
 const GRAY_MEDIUM = '#6B7280';
@@ -23,12 +23,29 @@ const GREEN_PRIMARY = '#10B981';
 const GREEN_ACCENT = '#D1FAE5';
 
 export default function ProductDetailScreen({ route, navigation }) {
-  const { product } = route.params; // Get the product passed from HomeScreen
-  const { addToCart } = useCart();
+  const { product } = route.params; 
+  const { addToCart, cartItems, toggleItemChecked } = useCart();
 
   const handleAddToCart = () => {
     addToCart(product);
     navigation.navigate('Cart'); // Go to cart after adding
+  };
+
+  const handleRentNow = () => {
+    // Check if item is already in cart
+    const itemInCart = cartItems.find(item => item.id === product.id);
+    
+    // If not in cart, add it.
+    if (!itemInCart) {
+      addToCart(product);
+    } 
+    // If in cart, make sure it's 'checked'
+    else if (!itemInCart.checked) {
+      toggleItemChecked(product.id);
+    }
+
+    // Navigate to checkout
+    navigation.navigate('Checkout');
   };
 
   return (
@@ -61,7 +78,10 @@ export default function ProductDetailScreen({ route, navigation }) {
           <MaterialCommunityIcons name="cart-plus" size={18} color={TEXT_PRIMARY} />
           <Text style={styles.pillText}>Add to Cart</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.pillBtn, styles.rentBtn]}>
+        <TouchableOpacity 
+          style={[styles.pillBtn, styles.rentBtn]}
+          onPress={handleRentNow} // <-- UPDATED
+        >
           <MaterialCommunityIcons name="wallet" size={18} color={TEXT_PRIMARY} />
           <Text style={styles.pillText}>Rent Now</Text>
         </TouchableOpacity>

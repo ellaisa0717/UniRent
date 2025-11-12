@@ -2,18 +2,20 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 
-// (Your other imports)
+// Import all your screens
 import CartScreen from '../screens/CartScreen';
 import ConfigureSettingsScreen from '../screens/ConfigureSettingsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import MainTabNavigator from './MainTabNavigator';
 
-// --- ADD IMPORT FOR NEW DETAIL SCREEN ---
-import ProductDetailScreen from '../screens/ProductDetailScreen';
+// --- ADD IMPORTS FOR CHECKOUT AND RECEIPT ---
+import CheckoutScreen from '../screens/CheckoutScreen';
+import ReceiptScreen from '../screens/ReceiptScreen';
 
 const Stack = createStackNavigator();
 
@@ -24,13 +26,15 @@ export default function AppNavigator() {
         initialRouteName="Welcome" 
         screenOptions={{ headerShown: false }}
       >
-        {/* (Your other screens) */}
+        {/* Auth Screens */}
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="HomeTabs" component={MainTabNavigator} />
         
-        {/* (Profile Screens) */}
+        {/* Main App (Tabs) */}
+        <Stack.Screen name="HomeTabs" component={MainTabNavigator} />
+
+        {/* Profile Screens */}
         <Stack.Screen 
           name="EditProfile" 
           component={EditProfileScreen}
@@ -65,7 +69,7 @@ export default function AppNavigator() {
           }}
         />
         
-        {/* (Cart Screen) */}
+        {/* Cart & Product Screens */}
         <Stack.Screen 
           name="Cart" 
           component={CartScreen}
@@ -77,17 +81,41 @@ export default function AppNavigator() {
             headerTitleAlign: 'center',
           }}
         />
-
-        {/* --- ADD NEW DETAIL SCREEN --- */}
         <Stack.Screen 
           name="ProductDetail" 
           component={ProductDetailScreen}
           options={{
             headerShown: true,
-            title: 'Item Details', // You can set this dynamically if you want
+            title: 'Item Details',
             headerStyle: { backgroundColor: '#F3F4F6' },
             headerShadowVisible: false,
             headerTitleAlign: 'center',
+          }}
+        />
+
+        {/* --- ADD CHECKOUT AND RECEIPT SCREENS --- */}
+        <Stack.Screen 
+          name="Checkout" 
+          component={CheckoutScreen}
+          options={{
+            headerShown: true,
+            title: 'Checkout',
+            headerStyle: { backgroundColor: '#F3F4F6' },
+            headerShadowVisible: false,
+            headerTitleAlign: 'center',
+          }}
+        />
+        <Stack.Screen 
+          name="Receipt" 
+          component={ReceiptScreen}
+          options={{
+            headerShown: true,
+            title: 'Receipt',
+            headerStyle: { backgroundColor: '#F3F4F6' },
+            headerShadowVisible: false,
+            headerTitleAlign: 'center',
+            // Hide the back button on the receipt screen
+            headerLeft: () => null, 
           }}
         />
         
