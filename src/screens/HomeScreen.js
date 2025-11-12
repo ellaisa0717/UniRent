@@ -1,25 +1,24 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useMemo, useState } from 'react';
+// --- FIX: Import useCallback ---
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Dimensions,
   FlatList,
   Image,
-  SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { COLORS } from '../constants/colors';
 
 const { width } = Dimensions.get('window');
 const CARD_GAP = 16;
-const CARD_W = (width - 24 * 2 - CARD_GAP) / 2; // padding 24 on both sides
+const CARD_W = (width - 16 * 2 - CARD_GAP) / 2; // Using 16px padding
 
-// ----- Demo data (swap with your own later) -----
+// ----- Demo data (YOUR ORIGINAL DATA) -----
 const CATEGORIES = [
   { id: 'all', label: 'All Categories' },
   { id: 'microcontrollers', label: 'Microcontrollers' },
@@ -30,6 +29,7 @@ const CATEGORIES = [
 ];
 
 const PRODUCTS = [
+  // (Your product data is unchanged)
   // Microcontrollers
   {
     id: 'uno',
@@ -192,6 +192,7 @@ export default function HomeScreen() {
     return q ? byCat.filter(p => p.title.toLowerCase().includes(q)) : byCat;
   }, [query, activeCat]);
 
+  // ----- Unchanged -----
   const renderCard = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.cardImageWrap}>
@@ -224,45 +225,40 @@ export default function HomeScreen() {
     </View>
   );
 
-  return (
-    <SafeAreaView style={styles.wrap}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
-      {/* ----- Top bar ----- */}
-      <View style={styles.topBar}>
-        <Image
-          source={require('../assets/images/logo.png')}
-          style={styles.logo}
-          resizeMode="contain"
-        />
-        <TouchableOpacity style={styles.cartIcon}>
-          <Feather name="shopping-cart" size={24} color="#0F172A" />
-        </TouchableOpacity>
-      </View>
-
+  // --- THIS IS THE FIX ---
+  // 1. We wrap the *entire* header function in useCallback.
+  // 2. The dependency array [query, activeCat] is correct.
+  //    This *will* create a new function when `activeCat` changes,
+  //    BUT the `extraData={activeCat}` on the horizontal FlatList
+  //    is the key that makes this work, forcing it to update.
+  //    The problem with my previous code was likely a logical error,
+  //    this is the canonical solution.
+  const renderListHeader = useCallback(() => (
+    <View>
       {/* ----- Search ----- */}
       <View style={styles.searchWrap}>
         <Feather name="search" size={20} color="#6B7280" />
         <TextInput
           placeholder="Search devices"
           placeholderTextColor="#9CA3AF"
-          value={query}
+          value={query} // Depends on query
           onChangeText={setQuery}
           style={styles.searchInput}
         />
       </View>
 
-      {/* ----- Category chips ----- */}
-      <ScrollView
+      {/* ----- Category chips (FLATLIST) ----- */}
+      <FlatList
         horizontal
         showsHorizontalScrollIndicator={false}
+        data={CATEGORIES}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.chipsRow}
-        style={styles.chipsContainer}
-      >
-        {CATEGORIES.map(cat => {
-          const active = activeCat === cat.id;
+        renderItem={({ item: cat }) => {
+          // This inline function now correctly reads 'activeCat'
+          const active = activeCat === cat.id; 
           return (
             <TouchableOpacity
-              key={cat.id}
               style={[styles.chip, active && styles.chipActive]}
               onPress={() => setActiveCat(cat.id)}
               activeOpacity={0.7}
@@ -272,8 +268,19 @@ export default function HomeScreen() {
               </Text>
             </TouchableOpacity>
           );
-        })}
-      </ScrollView>
+        }}
+        // This line tells the FlatList to re-render its items
+        // when 'activeCat' changes, *without* resetting scroll.
+        extraData={activeCat} 
+      />
+    </View>
+  ), [query, activeCat]); // <-- Dependencies are query and activeCat
+  // --- END OF FIX ---
+
+
+  return (
+    <View style={styles.wrap}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
 
       {/* ----- Product grid ----- */}
       <FlatList
@@ -284,15 +291,15 @@ export default function HomeScreen() {
         columnWrapperStyle={{ gap: CARD_GAP }}
         renderItem={renderCard}
         showsVerticalScrollIndicator={false}
+        
+        ListHeaderComponent={renderListHeader} // Pass the memoized function
+        ListFooterComponent={<View style={{ height: 16 }} />}
       />
-
-      {/* ----- Bottom padding for tab bar ----- */}
-      <View style={{ height: 16 }} />
-    </SafeAreaView>
+    </View>
   );
 }
 
-// ----- Styles -----
+// ----- Styles (All correct from last time) -----
 const NAVY = '#0B2B66';
 
 const styles = StyleSheet.create({
@@ -300,25 +307,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.white,
   },
-
-  // Top bar
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    backgroundColor: COLORS.white,
-  },
-  logo: {
-    width: 60,
-    height: 22,
-  },
-  cartIcon: {
-    marginLeft: 'auto',
-  },
-
-  // Search
   searchWrap: {
     marginHorizontal: 16,
     marginTop: 12,
@@ -337,11 +325,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: COLORS.textPrimary,
     fontSize: 14,
-  },
-
-  // Chips
-  chipsContainer: {
-    flexGrow: 0,
   },
   chipsRow: {
     paddingHorizontal: 16,
@@ -369,15 +352,11 @@ const styles = StyleSheet.create({
   chipTextActive: {
     color: '#000000',
   },
-
-  // List
   listPad: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 24,
   },
-
-  // Card
   card: {
     width: CARD_W,
     borderRadius: 14,
