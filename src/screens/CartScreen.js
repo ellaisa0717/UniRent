@@ -21,7 +21,7 @@ const TEXT_PRIMARY = '#111827';
 const BORDER_LIGHT = '#E5E7EB';
 const YELLOW_PRIMARY = '#FDB022';
 
-// --- Cart Item Component ---
+// --- Cart Item Component (Unchanged) ---
 const CartItem = ({ item, onRemove, onUpdateQty, onToggleCheck }) => {
   return (
     <View style={styles.card}>
@@ -33,14 +33,11 @@ const CartItem = ({ item, onRemove, onUpdateQty, onToggleCheck }) => {
             color={NAVY}
           />
         </TouchableOpacity>
-
         <Image source={{ uri: item.img }} style={styles.itemImage} />
-        
         <View style={styles.itemDetails}>
           <Text style={styles.itemTitle}>{item.title}</Text>
           <Text style={styles.itemSpecs} numberOfLines={3}>{item.specs}</Text>
         </View>
-
         <View style={styles.quantityStepper}>
           <TouchableOpacity onPress={() => onUpdateQty(1)}>
             <Feather name="plus-circle" size={20} color={GRAY_MEDIUM} />
@@ -51,7 +48,6 @@ const CartItem = ({ item, onRemove, onUpdateQty, onToggleCheck }) => {
           </TouchableOpacity>
         </View>
       </View>
-      
       <View style={styles.itemFooter}>
         <TouchableOpacity onPress={onRemove}>
           <Text style={styles.removeText}>Remove</Text>
@@ -70,12 +66,14 @@ export default function CartScreen({ navigation }) {
     updateQuantity,
     toggleItemChecked,
     toggleSelectAll,
-    totalPrice,
+    totalPrice, // This is the total of *checked* items
     isAllChecked,
   } = useCart();
 
-  // Get only the items that are checked
-  const checkedItemsCount = cartItems.filter(item => item.checked).length;
+  // --- THIS IS THE FIX (Part 1) ---
+  // Get the actual array of checked items
+  const checkedItems = cartItems.filter(item => item.checked);
+  // --- END OF FIX ---
 
   return (
     <SafeAreaView style={styles.container}>
@@ -122,23 +120,30 @@ export default function CartScreen({ navigation }) {
             <Text style={styles.totalPrice}>₱{totalPrice.toFixed(2)}</Text>
           </View>
 
+          {/* --- THIS IS THE FIX (Part 2) --- */}
           <TouchableOpacity 
             style={[
               styles.checkoutButton, 
-              checkedItemsCount === 0 && styles.checkoutButtonDisabled // Disable button if no items are checked
+              checkedItems.length === 0 && styles.checkoutButtonDisabled
             ]}
-            onPress={() => navigation.navigate('Checkout')}
-            disabled={checkedItemsCount === 0}
+            // Pass the checked items and their total base price
+            onPress={() => navigation.navigate('Checkout', {
+              items: checkedItems,
+              total: totalPrice,
+            })}
+            disabled={checkedItems.length === 0}
           >
             <Text style={styles.checkoutText}>Check Out</Text>
           </TouchableOpacity>
+          {/* --- END OF FIX --- */}
+          
         </View>
       )}
     </SafeAreaView>
   );
 }
 
-// --- Styles ---
+// --- Styles (Unchanged, but added one new style) ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -263,6 +268,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
   },
+  // --- NEW STYLE ---
   checkoutButtonDisabled: {
     backgroundColor: '#FDE68A', // A lighter yellow
   },

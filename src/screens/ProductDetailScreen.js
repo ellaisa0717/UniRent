@@ -10,7 +10,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { useCart } from '../context/CartContext'; // To add to cart
+import { useCart } from '../context/CartContext'; // Still needed for 'Add to Cart'
 
 // Define colors
 const NAVY = '#0B2B66';
@@ -24,35 +24,35 @@ const GREEN_ACCENT = '#D1FAE5';
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params; 
-  const { addToCart, cartItems, toggleItemChecked } = useCart();
+  const { addToCart } = useCart();
 
   const handleAddToCart = () => {
     addToCart(product);
-    navigation.navigate('Cart'); // Go to cart after adding
+    navigation.navigate('Cart'); 
   };
 
+  // --- THIS IS THE FIX ---
   const handleRentNow = () => {
-    // Check if item is already in cart
-    const itemInCart = cartItems.find(item => item.id === product.id);
+    // 1. Create a single-item array in the same format as a cart item
+    const itemToRent = {
+      ...product,
+      quantity: 1, // Default to 1
+      checked: true, // Default to checked
+    };
     
-    // If not in cart, add it.
-    if (!itemInCart) {
-      addToCart(product);
-    } 
-    // If in cart, make sure it's 'checked'
-    else if (!itemInCart.checked) {
-      toggleItemChecked(product.id);
-    }
-
-    // Navigate to checkout
-    navigation.navigate('Checkout');
+    // 2. Navigate to Checkout, passing ONLY this item and its base price
+    navigation.navigate('Checkout', {
+      items: [itemToRent], // Pass as an array
+      total: product.price, // Pass the base price
+    });
   };
+  // --- END OF FIX ---
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={GRAY_LIGHT_BG} />
       <ScrollView>
-        {/* Product Image */}
+        {/* (Image Container... unchanged) */}
         <View style={styles.imageContainer}>
           <Image source={{ uri: product.img }} style={styles.image} resizeMode="contain" />
           <View style={styles.badge}>
@@ -61,7 +61,7 @@ export default function ProductDetailScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Product Info */}
+        {/* (Product Info... unchanged) */}
         <View style={styles.detailsContainer}>
           <Text style={styles.title}>{product.title}</Text>
           <Text style={styles.price}>₱{product.price}/day</Text>
@@ -80,7 +80,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.pillBtn, styles.rentBtn]}
-          onPress={handleRentNow} // <-- UPDATED
+          onPress={handleRentNow} // <-- Updated
         >
           <MaterialCommunityIcons name="wallet" size={18} color={TEXT_PRIMARY} />
           <Text style={styles.pillText}>Rent Now</Text>
@@ -89,7 +89,6 @@ export default function ProductDetailScreen({ route, navigation }) {
     </SafeAreaView>
   );
 }
-
 // --- Styles ---
 const styles = StyleSheet.create({
   container: {
