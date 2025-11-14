@@ -11,6 +11,9 @@ import {
   View,
 } from 'react-native';
 import { useCart } from '../context/CartContext';
+// --- THIS IS THE FIX (Part 1) ---
+import Toast from 'react-native-toast-message'; // Import the Toast library
+// --- END OF FIX ---
 
 // Define colors
 const NAVY = '#0B2B66';
@@ -23,15 +26,26 @@ const GREEN_PRIMARY = '#10B981';
 const GREEN_ACCENT = '#D1FAE5';
 const PRIMARY_BLUE = '#0029F3';
 const BORDER_LIGHT = '#E5E7EB'; 
+const YELLOW_PRIMARY = '#FDB022';
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params; 
   const { addToCart, cartItems, toggleItemChecked } = useCart();
 
+  // --- THIS IS THE FIX (Part 2) ---
   const handleAddToCart = () => {
     addToCart(product);
-    navigation.navigate('Cart'); 
+    // Show a success pop-up instead of navigating
+    Toast.show({
+      type: 'success', // This will be a green pop-up
+      text1: 'Added to Cart',
+      text2: `${product.title} was added to your cart.`,
+      position: 'top',
+      visibilityTime: 2000, // Show for 2 seconds
+    });
+    // navigation.navigate('Cart'); // <-- We remove this line
   };
+  // --- END OF FIX ---
 
   const handleRentNow = () => {
     const itemInCart = cartItems.find(item => item.id === product.id);
@@ -48,16 +62,15 @@ export default function ProductDetailScreen({ route, navigation }) {
     });
   };
 
-  // --- THIS IS THE FIX ---
   const handleChat = () => {
-    // Navigate to the ChatScreen, passing the owner's name
-    // In a real app, you'd also pass a unique ownerID
     navigation.navigate('Chat', { 
       userName: `Chat with ${product.owner}`,
-      // userId: product.ownerId // (for a real app)
     });
   };
-  // --- END OF FIX ---
+
+  const handleCheckAvailability = () => {
+    navigation.navigate('Calendar');
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -76,17 +89,34 @@ export default function ProductDetailScreen({ route, navigation }) {
         <View style={styles.detailsContainer}>
           <Text style={styles.title}>{product.title}</Text>
           <Text style={styles.price}>₱{product.price}/day</Text>
+
+          <TouchableOpacity 
+            style={styles.availabilityButton}
+            onPress={handleCheckAvailability}
+          >
+            <Feather name="calendar" size={16} color={PRIMARY_BLUE} />
+            <Text style={styles.availabilityButtonText}>Check Availability</Text>
+          </TouchableOpacity>
           
           <View style={styles.ownerSection}>
-            <View style={styles.ownerRow}>
-              <Feather name="user" size={16} color={GRAY_MEDIUM} />
-              <Text style={styles.ownerText}>Posted by {product.owner}</Text>
+            <View style={styles.ownerInfo}>
+              <View style={styles.ownerRow}>
+                <Feather name="user" size={16} color={GRAY_MEDIUM} />
+                <Text style={styles.ownerText}>Posted by {product.owner}</Text>
+              </View>
+              <View style={styles.ratingRow}>
+                <Feather name="star" size={16} color={YELLOW_PRIMARY} />
+                <Text style={styles.ratingText}>
+                  {product.rating.toFixed(1)} 
+                  <Text style={styles.reviewCount}> ({product.reviewCount} reviews)</Text>
+                </Text>
+              </View>
             </View>
             <TouchableOpacity 
               style={styles.chatButton}
-              onPress={handleChat} // <-- This now works
+              onPress={handleChat}
             >
-              <Text style={styles.chatButtonText}>Chat with Owner</Text>
+              <Text style={styles.chatButtonText}>Chat</Text>
             </TouchableOpacity>
           </View>
 
@@ -94,11 +124,11 @@ export default function ProductDetailScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
-      {/* --- Bottom Action Bar (Unchanged) --- */}
+      {/* --- Bottom Action Bar --- */}
       <View style={styles.footer}>
         <TouchableOpacity 
           style={[styles.pillBtn, styles.cartBtn]}
-          onPress={handleAddToCart}
+          onPress={handleAddToCart} // <-- This now shows the pop-up
         >
           <MaterialCommunityIcons name="cart-plus" size={18} color={TEXT_PRIMARY} />
           <Text style={styles.pillText}>Add to Cart</Text>
@@ -169,6 +199,23 @@ const styles = StyleSheet.create({
     color: NAVY,
     marginBottom: 16,
   },
+  availabilityButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: WHITE,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: BORDER_LIGHT,
+    marginBottom: 16,
+  },
+  availabilityButtonText: {
+    color: PRIMARY_BLUE,
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
   ownerSection: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -178,20 +225,40 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: BORDER_LIGHT,
   },
+  ownerInfo: {
+    flex: 1,
+  },
   ownerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 8,
   },
   ownerText: {
     fontSize: 14,
     color: GRAY_MEDIUM,
     marginLeft: 8,
   },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: TEXT_PRIMARY,
+    marginLeft: 8,
+  },
+  reviewCount: {
+    fontSize: 14,
+    color: GRAY_MEDIUM,
+    fontWeight: 'normal',
+  },
   chatButton: {
     backgroundColor: PRIMARY_BLUE + '1A', 
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 8,
+    marginLeft: 10,
   },
   chatButtonText: {
     color: PRIMARY_BLUE,

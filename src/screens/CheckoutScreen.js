@@ -26,12 +26,10 @@ const YELLOW_PRIMARY = '#FDB022';
 export default function CheckoutScreen({ route, navigation }) {
   const { items, total } = route.params;
 
-  // Check if we are in the "Rent Now" (single item) flow
   const isSingleItemRent = items.length === 1;
   const singleItem = isSingleItemRent ? items[0] : null;
   const [quantity, setQuantity] = useState(isSingleItemRent ? singleItem.quantity : 1);
 
-  // State for Rental Period
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(() => {
     const tomorrow = new Date();
@@ -41,21 +39,15 @@ export default function CheckoutScreen({ route, navigation }) {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   
-  // --- THIS IS THE FIX (Part 1) ---
-  // State for Payment Method (GCash is now default)
   const paymentMethod = 'GCash';
-  // State for Payment Option
-  const [paymentType, setPaymentType] = useState('Full'); // 'Full' or 'Downpayment'
-  // --- END OF FIX ---
+  const [paymentType, setPaymentType] = useState('Full'); 
 
-  // Calculate rental days
   const rentalDays = useMemo(() => {
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 1; 
   }, [startDate, endDate]);
 
-  // Calculate the FULL total price
   const finalTotalPrice = useMemo(() => {
     if (isSingleItemRent) {
       return singleItem.price * quantity * rentalDays;
@@ -63,17 +55,13 @@ export default function CheckoutScreen({ route, navigation }) {
     return total * rentalDays; 
   }, [isSingleItemRent, singleItem, quantity, total, rentalDays]);
 
-  // --- THIS IS THE FIX (Part 2) ---
-  // Calculate the amount to be paid NOW
   const amountToPay = useMemo(() => {
     if (paymentType === 'Downpayment') {
       return finalTotalPrice / 2;
     }
     return finalTotalPrice;
   }, [paymentType, finalTotalPrice]);
-  // --- END OF FIX ---
 
-  // (Date picker handlers are unchanged)
   const onStartDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || startDate;
     setShowStartDatePicker(Platform.OS === 'ios');
@@ -90,28 +78,34 @@ export default function CheckoutScreen({ route, navigation }) {
     setShowEndDatePicker(Platform.OS === 'ios');
     setEndDate(currentDate);
   };
+  
+  // --- THIS IS THE FIX ---
+  // This function was missing
+  const handleUpdateQuantity = (amount) => {
+    const newQuantity = quantity + amount;
+    if (newQuantity > 0) {
+      setQuantity(newQuantity);
+    }
+  };
+  // --- END OF FIX ---
 
-  // Handle Pay button press
   const handlePay = () => {
     let itemsToPay = items;
     if (isSingleItemRent) {
       itemsToPay = [{ ...singleItem, quantity: quantity }];
     }
     
-    // --- THIS IS THE FIX (Part 3) ---
-    // Pass the new payment details to the receipt
     navigation.navigate('Receipt', {
       cartItems: itemsToPay,
-      totalPrice: finalTotalPrice,      // The full price
-      amountPaid: amountToPay,          // The amount just paid
-      paymentType: paymentType,         // "Full" or "Downpayment"
+      totalPrice: finalTotalPrice,
+      amountPaid: amountToPay,
+      paymentType: paymentType,
       rentalDates: {
         startDate: format(startDate, 'MM/dd/yyyy'),
         endDate: format(endDate, 'MM/dd/yyyy'),
       },
       paymentMethod: paymentMethod,
     });
-    // --- END OF FIX ---
   };
 
   return (
@@ -119,10 +113,9 @@ export default function CheckoutScreen({ route, navigation }) {
       <StatusBar barStyle="dark-content" backgroundColor={GRAY_LIGHT_BG} />
       <ScrollView contentContainerStyle={styles.scrollViewContent}>
 
-        {/* (Rental Period Section... unchanged) */}
+        {/* Rental Period Section */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Rental Period</Text>
-          {/* ... (Date picker inputs) ... */}
            <TouchableOpacity style={styles.datePickerRow} onPress={() => setShowStartDatePicker(true)}>
             <Text style={styles.dateLabel}>Start Date:</Text>
             <Text style={styles.dateValue}>{format(startDate, 'MM/dd/yyyy')}</Text>
@@ -154,10 +147,9 @@ export default function CheckoutScreen({ route, navigation }) {
           )}
         </View>
 
-        {/* (Rented Items Section... unchanged) */}
+        {/* Rented Items Section */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Rental Items</Text>
-          {/* ... (Logic for single or multi-item display) ... */}
           {isSingleItemRent ? (
             <View style={[styles.itemRow, styles.lastItemRow]}>
               <Image source={{ uri: singleItem.img }} style={styles.itemImage} />
@@ -199,8 +191,7 @@ export default function CheckoutScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* --- THIS IS THE FIX (Part 4) --- */}
-        {/* --- New Payment Option Section --- */}
+        {/* Payment Option Section */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Payment Option</Text>
           <TouchableOpacity 
@@ -228,37 +219,34 @@ export default function CheckoutScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
         
-        {/* --- Updated Payment Method Section --- */}
+        {/* Payment Method Section */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Payment Method</Text>
           <View style={styles.paymentOption}>
             <Text style={styles.paymentText}>GCash</Text>
             <MaterialCommunityIcons
-              name={'checkbox-marked'} // Always checked
+              name={'checkbox-marked'}
               size={24}
               color={PRIMARY_BLUE}
             />
           </View>
         </View>
-        {/* --- END OF FIX --- */}
 
       </ScrollView>
 
       {/* --- Footer - Pay Button --- */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.payButton} onPress={handlePay}>
-          {/* --- THIS IS THE FIX (Part 5) --- */}
           <Text style={styles.payButtonText}>
             Pay ₱{amountToPay.toFixed(2)}
           </Text>
-          {/* --- END OF FIX --- */}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
-// (All styles are unchanged from the previous version)
+// (All styles are unchanged)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

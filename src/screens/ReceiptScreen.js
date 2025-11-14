@@ -18,7 +18,7 @@ const GRAY_LIGHT_BG = '#F3F4F6';
 const GRAY_MEDIUM = '#6B7280';
 const TEXT_PRIMARY = '#111827';
 const BORDER_LIGHT = '#E5E7EB';
-const YELLOW_PRIMARY = '#FDB022'; // For the new button
+const YELLOW_PRIMARY = '#FDB022'; 
 
 export default function ReceiptScreen({ route, navigation }) {
   const {
@@ -32,10 +32,7 @@ export default function ReceiptScreen({ route, navigation }) {
 
   const remainingBalance = totalPrice - amountPaid;
 
-  // --- THIS IS THE NEW FUNCTION ---
   const handleContactOwner = () => {
-    // We'll just chat with the owner of the *first* item in the list
-    // A real app might need a chat per owner if there are multiple
     const firstItemOwner = cartItems[0]?.owner || 'Owner'; 
     navigation.navigate('Chat', {
       userName: `Chat with ${firstItemOwner}`,
@@ -52,8 +49,6 @@ export default function ReceiptScreen({ route, navigation }) {
           <Text style={styles.subHeaderText}>Thank you for your rental.</Text>
         </View>
 
-        {/* --- THIS IS THE FIX --- */}
-        {/* Added "Contact Owner" button */}
         <TouchableOpacity 
           style={styles.contactButton} 
           onPress={handleContactOwner}
@@ -61,7 +56,6 @@ export default function ReceiptScreen({ route, navigation }) {
           <Feather name="message-square" size={20} color={TEXT_PRIMARY} />
           <Text style={styles.contactButtonText}>Contact Owner to Arrange Pickup</Text>
         </TouchableOpacity>
-        {/* --- END OF FIX --- */}
 
 
         {/* (Rental Details... unchanged) */}
@@ -126,17 +120,21 @@ export default function ReceiptScreen({ route, navigation }) {
 
       {/* --- Footer Button --- */}
       <View style={styles.footer}>
+        {/* --- THIS IS THE FIX --- */}
         <TouchableOpacity 
           style={styles.doneButton} 
-          onPress={() => navigation.popToTop()} 
+          // This navigates to the "HomeTabs" navigator, which will show the "Home" screen
+          onPress={() => navigation.navigate('HomeTabs', { screen: 'Home' })} 
         >
           <Text style={styles.doneButtonText}>Back to Home</Text>
         </TouchableOpacity>
+        {/* --- END OF FIX --- */}
       </View>
     </SafeAreaView>
   );
 }
 
+// (Styles are unchanged)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -149,7 +147,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingVertical: 30,
-    marginBottom: 16, // Reduced margin
+    marginBottom: 16, 
     backgroundColor: WHITE,
     borderRadius: 12,
     shadowColor: '#000',
@@ -169,7 +167,6 @@ const styles = StyleSheet.create({
     color: GRAY_MEDIUM,
     marginTop: 5,
   },
-  // --- NEW STYLES ---
   contactButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -190,7 +187,6 @@ const styles = StyleSheet.create({
     color: TEXT_PRIMARY,
     marginLeft: 10,
   },
-  // --- END NEW STYLES ---
   sectionCard: {
     backgroundColor: WHITE,
     borderRadius: 12,

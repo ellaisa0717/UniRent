@@ -20,13 +20,14 @@ const TEXT_PRIMARY = '#111827';
 const BORDER_LIGHT = '#E5E7EB';
 const GREEN_PRIMARY = '#10B981';
 const YELLOW_PRIMARY = '#FDB022';
+const PRIMARY_BLUE = '#0029F3'; // Your accent blue
 
 // --- Sample Data (Items *you* have rented) ---
 const MY_RENTALS_DATA = [
   {
     id: 'rental_123',
     title: 'ARDUINO UNO R3',
-    img: 'https.i.imgur.com/Zy2Qk8G.png',
+    img: 'https://i.imgur.com/Zy2Qk8G.png',
     status: 'Pending Pickup',
     statusColor: YELLOW_PRIMARY,
     owner: 'Justin N.',
@@ -35,7 +36,7 @@ const MY_RENTALS_DATA = [
   {
     id: 'rental_456',
     title: 'PIR MOTION SENSOR',
-    img: 'https.i.imgur.com/ba8K1rU.png',
+    img: 'https://i.imgur.com/ba8K1rU.png',
     status: 'Active Rental',
     statusColor: GREEN_PRIMARY,
     owner: 'Maria C.',
@@ -44,7 +45,7 @@ const MY_RENTALS_DATA = [
   {
     id: 'rental_789',
     title: 'RASPBERRY PI 4 MODEL B',
-    img: 'https.i.imgur.com/0quD8jC.png',
+    img: 'https://i.imgur.com/0quD8jC.png',
     status: 'Returned',
     statusColor: GRAY_MEDIUM,
     owner: 'Ellaisa F.',
@@ -55,32 +56,53 @@ const MY_RENTALS_DATA = [
 export default function MyRentalsScreen({ navigation }) {
 
   const renderRentalItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.itemCard}
-      onPress={() => {
-        if (item.status === 'Pending Pickup') {
-          navigation.navigate('Chat', { userName: `Chat with ${item.owner}` });
-        }
-      }}
-    >
+    <View style={styles.itemCard}>
       <Image source={{ uri: item.img }} style={styles.itemImage} />
       <View style={styles.itemContent}>
         <Text style={styles.itemTitle} numberOfLines={2}>{item.title}</Text>
         <Text style={styles.itemOwner}>from {item.owner}</Text>
-        <View style={styles.statusBadge}>
-          <View style={[styles.statusDot, { backgroundColor: item.statusColor }]} />
-          <Text style={[styles.statusText, { color: item.statusColor }]}>
-            {item.status}
-          </Text>
-        </View>
+        
+        {/* --- THIS IS THE FIX --- */}
+        {/* We show either the status, or a review button */}
+        {item.status === 'Returned' ? (
+          <TouchableOpacity 
+            style={styles.reviewButton}
+            onPress={() => navigation.navigate('LeaveReview', { item: item })}
+          >
+            <Feather name="star" size={14} color={PRIMARY_BLUE} />
+            <Text style={styles.reviewButtonText}>Leave a Review</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.statusBadge}>
+            <View style={[styles.statusDot, { backgroundColor: item.statusColor }]} />
+            <Text style={[styles.statusText, { color: item.statusColor }]}>
+              {item.status}
+            </Text>
+          </View>
+        )}
+        {/* --- END OF FIX --- */}
       </View>
-      <View style={styles.dateContainer}>
+      
+      {/* --- THIS IS A FIX --- */}
+      {/* Updated logic for the date label */}
+      <TouchableOpacity
+        style={styles.dateContainer}
+        onPress={() => {
+          if (item.status === 'Pending Pickup') {
+            navigation.navigate('Chat', { userName: `Chat with ${item.owner}` });
+          }
+        }}
+      >
         <Text style={styles.dateLabel}>
-          {item.status === 'Returned' ? 'Returned:' : 'Due:'}
+          {item.status === 'Returned' ? 'Returned:' : item.status === 'Active Rental' ? 'Due:' : 'Pickup:'}
         </Text>
         <Text style={styles.dateText}>{item.returnDate}</Text>
-      </View>
-    </TouchableOpacity>
+        {item.status === 'Pending Pickup' && (
+          <Text style={styles.chatHint}>Contact Owner</Text>
+        )}
+      </TouchableOpacity>
+      {/* --- END OF FIX --- */}
+    </View>
   );
 
   return (
@@ -107,7 +129,7 @@ export default function MyRentalsScreen({ navigation }) {
   );
 }
 
-// --- Styles (Unchanged) ---
+// --- Styles ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -150,6 +172,7 @@ const styles = StyleSheet.create({
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start', // Make badge only as wide as its content
   },
   statusDot: {
     width: 8,
@@ -161,6 +184,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
+  // --- NEW STYLES ---
+  reviewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: PRIMARY_BLUE + '1A', // Light blue
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  reviewButtonText: {
+    color: PRIMARY_BLUE,
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginLeft: 6,
+  },
+  chatHint: {
+    fontSize: 12,
+    color: PRIMARY_BLUE,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  // --- END NEW STYLES ---
   dateContainer: {
     alignItems: 'flex-end',
   },
@@ -186,7 +232,7 @@ const styles = StyleSheet.create({
   },
   browseText: {
     fontSize: 16,
-    color: '#0029F3',
+    color: PRIMARY_BLUE,
     fontWeight: 'bold',
     marginTop: 10,
     padding: 10,
