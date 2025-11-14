@@ -16,7 +16,7 @@ const { width } = Dimensions.get('window');
 const CARD_GAP = 16;
 const CARD_W = (width - 16 * 2 - CARD_GAP) / 2; 
 
-// --- Products with Prices (Full List) ---
+// --- Products with Prices & Owners ---
 const PRODUCTS = [
   // Microcontrollers
   {
@@ -27,6 +27,7 @@ const PRODUCTS = [
       'Popular microcontroller board based on the ATmega328P. Ideal for beginners in electronics and programming.',
     img: 'https://i.imgur.com/Zy2Qk8G.png',
     price: 25, 
+    owner: 'Justin N.', // <-- ADDED
   },
   {
     id: 'mega',
@@ -36,6 +37,7 @@ const PRODUCTS = [
       'An advanced microcontroller with more memory and pins, great for complex projects.',
     img: 'https://i.imgur.com/2O6pY1y.png',
     price: 45, 
+    owner: 'Ellaisa F.', // <-- ADDED
   },
   {
     id: 'esp32',
@@ -45,6 +47,7 @@ const PRODUCTS = [
       'Wi-Fi and Bluetooth-enabled MCU with dual-core processing, perfect for IoT projects.',
     img: 'https://i.imgur.com/Xx8Q1o7.png',
     price: 30, 
+    owner: 'John D.', // <-- ADDED
   },
   {
     id: 'esp8266',
@@ -53,6 +56,7 @@ const PRODUCTS = [
     desc: 'Compact Wi-Fi-enabled controller suitable for small IoT prototypes.',
     img: 'https://i.imgur.com/5L7Bfwn.png',
     price: 20, 
+    owner: 'Jane S.', // <-- ADDED
   },
 
   // Single-board computers
@@ -64,6 +68,7 @@ const PRODUCTS = [
       'Compact, affordable Pi board for lightweight IoT and embedded projects.',
     img: 'https://i.imgur.com/2c5Y4Y6.png',
     price: 50, 
+    owner: 'Justin N.', // <-- ADDED
   },
   {
     id: 'jetson',
@@ -72,6 +77,7 @@ const PRODUCTS = [
     desc: 'AI-powered SBC for ML, image processing and robotics.',
     img: 'https://i.imgur.com/1sJQ2sC.png',
     price: 150, 
+    owner: 'Alex M.', // <-- ADDED
   },
   {
     id: 'pi4',
@@ -81,6 +87,7 @@ const PRODUCTS = [
       'Powerful single-board computer for advanced IoT, AI, and server-based capture projects.',
     img: 'https://i.imgur.com/0quD8jC.png',
     price: 75, 
+    owner: 'Ellaisa F.', // <-- ADDED
   },
   {
     id: 'dht22',
@@ -89,6 +96,7 @@ const PRODUCTS = [
     desc: 'High-accuracy sensor for environmental monitoring projects.',
     img: 'https://i.imgur.com/9yJYz3U.png',
     price: 15, 
+    owner: 'Justin N.', // <-- ADDED
   },
 
   // Sensors
@@ -99,6 +107,7 @@ const PRODUCTS = [
     desc: 'Detects human movement; used in automation and security systems.',
     img: 'https://i.imgur.com/ba8K1rU.png',
     price: 20, 
+    owner: 'Maria C.', // <-- ADDED
   },
   {
     id: 'mq2',
@@ -107,6 +116,7 @@ const PRODUCTS = [
     desc: 'Detects flammable gases like LPG, methane, and smoke.',
     img: 'https://i.imgur.com/NwV0cJX.png',
     price: 18, 
+    owner: 'John D.', // <-- ADDED
   },
   {
     id: 'hc-sr04',
@@ -115,6 +125,7 @@ const PRODUCTS = [
     desc: 'Affordable sensor for distance measurement and obstacle detection.',
     img: 'https://i.imgur.com/0eXH6Vq.png',
     price: 10, 
+    owner: 'Jane S.', // <-- ADDED
   },
 
   // Modules
@@ -125,6 +136,7 @@ const PRODUCTS = [
     desc: 'High-torque servo for robotics and heavy-duty mechanisms.',
     img: 'https://i.imgur.com/b83r0Zg.png',
     price: 22, 
+    owner: 'Justin N.', // <-- ADDED
   },
   {
     id: 'l298n',
@@ -133,6 +145,7 @@ const PRODUCTS = [
     desc: 'Control DC motors and robotic wheels easily.',
     img: 'https://i.imgur.com/1i9Q3Pz.png',
     price: 25, 
+    owner: 'Alex M.', // <-- ADDED
   },
   {
     id: 'sg90',
@@ -141,6 +154,7 @@ const PRODUCTS = [
     desc: 'Mini servo for robotics and automation projects.',
     img: 'https://i.imgur.com/qDA3C1T.png',
     price: 12, 
+    owner: 'Ellaisa F.', // <-- ADDED
   },
   {
     id: 'relay4',
@@ -149,6 +163,7 @@ const PRODUCTS = [
     desc: 'Control AC appliances with microcontrollers.',
     img: 'https://i.imgur.com/XoW9R9t.png',
     price: 30, 
+    owner: 'Maria C.', // <-- ADDED
   },
   {
     id: 'hc05',
@@ -157,6 +172,7 @@ const PRODUCTS = [
     desc: 'Wireless serial communication for embedded devices.',
     img: 'https://i.imgur.com/ya3iU0f.png',
     price: 28, 
+    owner: 'Justin N.', // <-- ADDED
   },
   {
     id: 'neo6m',
@@ -165,6 +181,7 @@ const PRODUCTS = [
     desc: 'Provides GPS location data for IoT and navigation projects.',
     img: 'https://i.imgur.com/6Jx2z0M.png',
     price: 35, 
+    owner: 'John D.', // <-- ADDED
   },
 
   // Power
@@ -175,6 +192,7 @@ const PRODUCTS = [
     desc: 'Supplies regulated power for prototypes.',
     img: 'https://i.imgur.com/KYh1mTn.png',
     price: 15, 
+    owner: 'Jane S.', // <-- ADDED
   },
   {
     id: 'lipo-pack',
@@ -183,6 +201,7 @@ const PRODUCTS = [
     desc: 'Rechargeable battery for portable electronics.',
     img: 'https.i.imgur.com/k5cY6p1.png',
     price: 40, 
+    owner: 'Justin N.', // <-- ADDED
   },
 ];
 
@@ -199,14 +218,14 @@ export default function HomeScreen({ navigation }) {
     return q ? byCat.filter(p => p.title.toLowerCase().includes(q)) : byCat;
   }, [query, activeCat]);
 
-  // This function now navigates to the detail screen
+  // This function automatically passes the *entire* item object,
+  // including the new 'owner' field. No change needed here.
   const handleItemPress = (product) => {
     navigation.navigate('ProductDetail', { product: product });
   };
 
   // ----- Card Renderer -----
   const renderCard = ({ item }) => (
-    // The entire card is now a button
     <TouchableOpacity
       style={styles.card}
       onPress={() => handleItemPress(item)}
@@ -220,10 +239,7 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
       <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-      
-      {/* We only show the price here */}
       <Text style={styles.priceText}>₱{item.price}/day</Text>
-      
     </TouchableOpacity>
   );
 
@@ -259,7 +275,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-// ----- Styles -----
+// ----- Styles (Unchanged) -----
 const NAVY = '#0B2B66';
 
 const styles = StyleSheet.create({
@@ -320,7 +336,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   priceText: {
-    color: '#FFE58A', // Yellow accent
+    color: '#FFE58A',
     fontSize: 14,
     fontWeight: 'bold',
     marginTop: 8, 

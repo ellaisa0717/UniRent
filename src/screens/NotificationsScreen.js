@@ -1,4 +1,4 @@
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
   FlatList,
@@ -10,19 +10,51 @@ import {
   View,
 } from 'react-native';
 
-// Define the colors from your home screen for consistency
-const NAVY = '#0029F3';
+// Define colors
+const NAVY = '#0B2B66';
 const YELLOW_PRIMARY = '#FDB022';
-const YELLOW_ACCENT = '#FFE58A';
 const GREEN_PRIMARY = '#10B981';
-const GREEN_ACCENT = '#D1FAE5';
 const WHITE = '#FFFFFF';
 const GRAY_LIGHT = '#F3F4F6';
 const GRAY_MEDIUM = '#6B7280';
-const TEXT_PRIMARY = '#111827'; // Dark text for readability
+const TEXT_PRIMARY = '#111827';
+const PRIMARY_BLUE = '#0029F3'; // Your accent color
 
-// --- Sample Notification Data ---
+// --- THIS IS THE FIX (Part 1) ---
+// Sample data for the new notification type
+const DUMMY_RENTAL_DETAILS = {
+  id: 'rental_123',
+  renterName: 'John D.',
+  renterAvatar: 'https://i.imgur.com/8Km9tcn.png', // Placeholder
+  startDate: '09/02/2025',
+  endDate: '09/04/2025',
+  item: {
+    id: 'uno',
+    title: 'ARDUINO UNO R3',
+    img: 'https://i.imgur.com/Zy2Qk8G.png',
+    price: 25,
+    quantity: 1,
+  },
+  totalPrice: 50.00, // 25/day * 2 days
+  amountPaid: 25.00, // 50% downpayment
+  paymentType: 'Downpayment',
+  remainingBalance: 25.00,
+};
+
+// --- Updated Notification Data ---
 const NOTIFICATIONS_DATA = [
+  // --- THIS IS THE NEW NOTIFICATION ---
+  {
+    id: 'rental_notif',
+    type: 'rental_request', // New type
+    title: 'Your item has been rented!',
+    message: 'John D. has rented your ARDUINO UNO R3.',
+    time: '5 minutes ago',
+    read: false,
+    icon: 'check-decagram', // A "verified" or "success" icon
+    data: DUMMY_RENTAL_DETAILS, // Attach the rental data
+  },
+  // --- End of new notification ---
   {
     id: '1',
     type: 'order_shipped',
@@ -50,37 +82,35 @@ const NOTIFICATIONS_DATA = [
     read: true,
     icon: 'tag-multiple',
   },
-  {
-    id: '4',
-    type: 'stock_update',
-    title: 'Arduino Uno R3 back in stock!',
-    message: 'Good news! Your favorite board is available again.',
-    time: '3 days ago',
-    read: true,
-    icon: 'check-circle-outline',
-  },
-  {
-    id: '5',
-    type: 'system_alert',
-    title: 'Maintenance Notice',
-    message: 'Our services will be briefly interrupted tonight for updates.',
-    time: '1 week ago',
-    read: true,
-    icon: 'cog-outline',
-  },
 ];
+// --- END OF FIX (Part 1) ---
 
 // --- Notification Icon Mapping ---
 const NOTIFICATION_ICONS = {
+  rental_request: { name: 'check-decagram', color: PRIMARY_BLUE }, // New icon
   order_shipped: { name: 'truck-delivery', color: GREEN_PRIMARY },
   new_product: { name: 'new-box', color: NAVY },
   promotion: { name: 'tag-multiple', color: YELLOW_PRIMARY },
-  stock_update: { name: 'check-circle-outline', color: GREEN_PRIMARY },
-  system_alert: { name: 'cog-outline', color: GRAY_MEDIUM },
-  default: { name: 'bell-outline', color: GRAY_MEDIUM }, // Fallback
+  default: { name: 'bell-outline', color: GRAY_MEDIUM }, 
 };
 
-export default function NotificationsScreen() {
+export default function NotificationsScreen({ navigation }) { // <-- Added navigation
+
+  // --- THIS IS THE FIX (Part 2) ---
+  // Handle notification press
+  const handlePress = (item) => {
+    // Mark as read, etc.
+    console.log('Notification pressed:', item.id);
+
+    // If it's a rental request, navigate to the details
+    if (item.type === 'rental_request') {
+      navigation.navigate('RentalDetails', { 
+        rentalDetails: item.data 
+      });
+    }
+  };
+  // --- END OF FIX (Part 2) ---
+
   const renderNotificationItem = ({ item }) => {
     const iconData = NOTIFICATION_ICONS[item.type] || NOTIFICATION_ICONS.default;
     
@@ -88,8 +118,7 @@ export default function NotificationsScreen() {
       <TouchableOpacity 
         style={[styles.notificationItem, !item.read && styles.unreadItem]}
         activeOpacity={0.8}
-        // You would typically navigate or mark as read here
-        onPress={() => console.log('Notification pressed:', item.id)}
+        onPress={() => handlePress(item)} // <-- Use the new handler
       >
         <View style={[styles.iconContainer, { backgroundColor: iconData.color + '20' }]}> 
           <MaterialCommunityIcons 
@@ -111,12 +140,9 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={WHITE} />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Notifications</Text>
-        <TouchableOpacity style={styles.settingsButton}>
-          <Feather name="settings" size={24} color={NAVY} />
-        </TouchableOpacity>
-      </View>
+      {/* This screen no longer has its own header, as it's provided 
+        by the AppNavigator. The header <View> has been removed.
+      */}
 
       <FlatList
         data={NOTIFICATIONS_DATA}
@@ -141,25 +167,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: WHITE,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: GRAY_LIGHT,
-    backgroundColor: WHITE,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: NAVY,
-    letterSpacing: 0.5,
-  },
-  settingsButton: {
-    padding: 5,
-  },
+  // The old 'header' styles have been removed
   listContent: {
     paddingHorizontal: 10,
     paddingVertical: 10,
@@ -171,6 +179,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     marginVertical: 5,
+    // Using a simpler shadow for consistency
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
@@ -178,7 +187,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   unreadItem: {
-    backgroundColor: GRAY_LIGHT, // Slightly different background for unread
+    backgroundColor: GRAY_LIGHT,
   },
   iconContainer: {
     width: 48,
@@ -215,13 +224,13 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   separator: {
-    height: 10, // Space between items
+    height: 0, // Set to 0, marginVertical on item creates space
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 50,
+    paddingTop: 150, // Pushed it down a bit
   },
   emptyText: {
     fontSize: 18,

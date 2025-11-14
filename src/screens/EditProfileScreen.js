@@ -34,7 +34,7 @@ const ProfileEditableItem = ({ label, value, onPress, isPassword = false }) => (
 
 export default function EditProfileScreen({ navigation }) {
   // Dummy data held in state, so it can be changed
-  const [name, setName] = useState('Justin Nabunturan');
+  const [name, setName] = useState('Ellaisa Faith Apidol');
   const [year, setYear] = useState('3rd Year');
   const [major, setMajor] = useState('Information Technology');
   

@@ -1,16 +1,16 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { useCart } from '../context/CartContext'; // Still needed for 'Add to Cart'
+import { useCart } from '../context/CartContext';
 
 // Define colors
 const NAVY = '#0B2B66';
@@ -21,29 +21,40 @@ const TEXT_PRIMARY = '#111827';
 const YELLOW_ACCENT = '#FFE58A';
 const GREEN_PRIMARY = '#10B981';
 const GREEN_ACCENT = '#D1FAE5';
+const PRIMARY_BLUE = '#0029F3';
+const BORDER_LIGHT = '#E5E7EB'; 
 
 export default function ProductDetailScreen({ route, navigation }) {
   const { product } = route.params; 
-  const { addToCart } = useCart();
+  const { addToCart, cartItems, toggleItemChecked } = useCart();
 
   const handleAddToCart = () => {
     addToCart(product);
     navigation.navigate('Cart'); 
   };
 
-  // --- THIS IS THE FIX ---
   const handleRentNow = () => {
-    // 1. Create a single-item array in the same format as a cart item
-    const itemToRent = {
-      ...product,
-      quantity: 1, // Default to 1
-      checked: true, // Default to checked
-    };
+    const itemInCart = cartItems.find(item => item.id === product.id);
+    if (!itemInCart) {
+      addToCart(product);
+    } 
+    else if (!itemInCart.checked) {
+      toggleItemChecked(product.id);
+    }
     
-    // 2. Navigate to Checkout, passing ONLY this item and its base price
     navigation.navigate('Checkout', {
-      items: [itemToRent], // Pass as an array
-      total: product.price, // Pass the base price
+      items: [{ ...product, quantity: 1, checked: true }], 
+      total: product.price,
+    });
+  };
+
+  // --- THIS IS THE FIX ---
+  const handleChat = () => {
+    // Navigate to the ChatScreen, passing the owner's name
+    // In a real app, you'd also pass a unique ownerID
+    navigation.navigate('Chat', { 
+      userName: `Chat with ${product.owner}`,
+      // userId: product.ownerId // (for a real app)
     });
   };
   // --- END OF FIX ---
@@ -52,7 +63,7 @@ export default function ProductDetailScreen({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={GRAY_LIGHT_BG} />
       <ScrollView>
-        {/* (Image Container... unchanged) */}
+        {/* Product Image */}
         <View style={styles.imageContainer}>
           <Image source={{ uri: product.img }} style={styles.image} resizeMode="contain" />
           <View style={styles.badge}>
@@ -61,15 +72,29 @@ export default function ProductDetailScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* (Product Info... unchanged) */}
+        {/* Product Info */}
         <View style={styles.detailsContainer}>
           <Text style={styles.title}>{product.title}</Text>
           <Text style={styles.price}>₱{product.price}/day</Text>
+          
+          <View style={styles.ownerSection}>
+            <View style={styles.ownerRow}>
+              <Feather name="user" size={16} color={GRAY_MEDIUM} />
+              <Text style={styles.ownerText}>Posted by {product.owner}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.chatButton}
+              onPress={handleChat} // <-- This now works
+            >
+              <Text style={styles.chatButtonText}>Chat with Owner</Text>
+            </TouchableOpacity>
+          </View>
+
           <Text style={styles.description}>{product.desc}</Text>
         </View>
       </ScrollView>
 
-      {/* --- Bottom Action Bar --- */}
+      {/* --- Bottom Action Bar (Unchanged) --- */}
       <View style={styles.footer}>
         <TouchableOpacity 
           style={[styles.pillBtn, styles.cartBtn]}
@@ -80,7 +105,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.pillBtn, styles.rentBtn]}
-          onPress={handleRentNow} // <-- Updated
+          onPress={handleRentNow}
         >
           <MaterialCommunityIcons name="wallet" size={18} color={TEXT_PRIMARY} />
           <Text style={styles.pillText}>Rent Now</Text>
@@ -89,7 +114,8 @@ export default function ProductDetailScreen({ route, navigation }) {
     </SafeAreaView>
   );
 }
-// --- Styles ---
+
+// --- Styles (Unchanged) ---
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -143,6 +169,35 @@ const styles = StyleSheet.create({
     color: NAVY,
     marginBottom: 16,
   },
+  ownerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER_LIGHT,
+  },
+  ownerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ownerText: {
+    fontSize: 14,
+    color: GRAY_MEDIUM,
+    marginLeft: 8,
+  },
+  chatButton: {
+    backgroundColor: PRIMARY_BLUE + '1A', 
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  chatButtonText: {
+    color: PRIMARY_BLUE,
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
   description: {
     fontSize: 16,
     color: GRAY_MEDIUM,
@@ -151,10 +206,10 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     padding: 16,
-    paddingBottom: 24, // For home bar
+    paddingBottom: 24,
     backgroundColor: WHITE,
     borderTopWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: BORDER_LIGHT,
   },
   pillBtn: {
     flex: 1,

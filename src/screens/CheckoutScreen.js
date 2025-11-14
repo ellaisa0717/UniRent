@@ -1,18 +1,18 @@
-import React, { useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  SafeAreaView,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  Platform,
-} from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
+import React, { useMemo, useState } from 'react';
+import {
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 // Define colors
 const PRIMARY_BLUE = '#0029F3'; 
@@ -24,18 +24,12 @@ const BORDER_LIGHT = '#E5E7EB';
 const YELLOW_PRIMARY = '#FDB022';
 
 export default function CheckoutScreen({ route, navigation }) {
-  // Get items and total base price from route parameters
   const { items, total } = route.params;
 
-  // --- THIS IS THE FIX (Part 1) ---
   // Check if we are in the "Rent Now" (single item) flow
   const isSingleItemRent = items.length === 1;
   const singleItem = isSingleItemRent ? items[0] : null;
-
-  // Create local state for quantity, only used in "Rent Now" flow
-  // Default to the item's quantity (which is 1)
   const [quantity, setQuantity] = useState(isSingleItemRent ? singleItem.quantity : 1);
-  // --- END OF FIX ---
 
   // State for Rental Period
   const [startDate, setStartDate] = useState(new Date());
@@ -46,9 +40,13 @@ export default function CheckoutScreen({ route, navigation }) {
   });
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-
-  // State for Payment Method
-  const [paymentMethod, setPaymentMethod] = useState('Cash'); 
+  
+  // --- THIS IS THE FIX (Part 1) ---
+  // State for Payment Method (GCash is now default)
+  const paymentMethod = 'GCash';
+  // State for Payment Option
+  const [paymentType, setPaymentType] = useState('Full'); // 'Full' or 'Downpayment'
+  // --- END OF FIX ---
 
   // Calculate rental days
   const rentalDays = useMemo(() => {
@@ -57,16 +55,22 @@ export default function CheckoutScreen({ route, navigation }) {
     return diffDays > 0 ? diffDays : 1; 
   }, [startDate, endDate]);
 
-  // --- THIS IS THE FIX (Part 2) ---
-  // Calculate total price based on flow
+  // Calculate the FULL total price
   const finalTotalPrice = useMemo(() => {
     if (isSingleItemRent) {
-      // If single item, use its price * local quantity * days
       return singleItem.price * quantity * rentalDays;
     }
-    // If from cart, use the pre-calculated 'total' * days
     return total * rentalDays; 
   }, [isSingleItemRent, singleItem, quantity, total, rentalDays]);
+
+  // --- THIS IS THE FIX (Part 2) ---
+  // Calculate the amount to be paid NOW
+  const amountToPay = useMemo(() => {
+    if (paymentType === 'Downpayment') {
+      return finalTotalPrice / 2;
+    }
+    return finalTotalPrice;
+  }, [paymentType, finalTotalPrice]);
   // --- END OF FIX ---
 
   // (Date picker handlers are unchanged)
@@ -87,34 +91,28 @@ export default function CheckoutScreen({ route, navigation }) {
     setEndDate(currentDate);
   };
 
-  // --- THIS IS THE FIX (Part 3) ---
-  // Stepper logic for "Rent Now" flow
-  const handleUpdateQuantity = (amount) => {
-    const newQuantity = quantity + amount;
-    if (newQuantity > 0) {
-      setQuantity(newQuantity);
-    }
-  };
-
   // Handle Pay button press
   const handlePay = () => {
     let itemsToPay = items;
-    // If single item, update its quantity before passing to receipt
     if (isSingleItemRent) {
       itemsToPay = [{ ...singleItem, quantity: quantity }];
     }
     
+    // --- THIS IS THE FIX (Part 3) ---
+    // Pass the new payment details to the receipt
     navigation.navigate('Receipt', {
-      cartItems: itemsToPay, // Pass the correct items
-      totalPrice: finalTotalPrice,
+      cartItems: itemsToPay,
+      totalPrice: finalTotalPrice,      // The full price
+      amountPaid: amountToPay,          // The amount just paid
+      paymentType: paymentType,         // "Full" or "Downpayment"
       rentalDates: {
         startDate: format(startDate, 'MM/dd/yyyy'),
         endDate: format(endDate, 'MM/dd/yyyy'),
       },
       paymentMethod: paymentMethod,
     });
+    // --- END OF FIX ---
   };
-  // --- END OF FIX ---
 
   return (
     <SafeAreaView style={styles.container}>
@@ -124,7 +122,8 @@ export default function CheckoutScreen({ route, navigation }) {
         {/* (Rental Period Section... unchanged) */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Rental Period</Text>
-          <TouchableOpacity style={styles.datePickerRow} onPress={() => setShowStartDatePicker(true)}>
+          {/* ... (Date picker inputs) ... */}
+           <TouchableOpacity style={styles.datePickerRow} onPress={() => setShowStartDatePicker(true)}>
             <Text style={styles.dateLabel}>Start Date:</Text>
             <Text style={styles.dateValue}>{format(startDate, 'MM/dd/yyyy')}</Text>
             <Feather name="chevron-down" size={20} color={GRAY_MEDIUM} />
@@ -155,13 +154,11 @@ export default function CheckoutScreen({ route, navigation }) {
           )}
         </View>
 
-        {/* --- THIS IS THE FIX (Part 4) --- */}
-        {/* Rented Items Section (Conditionally renders) */}
+        {/* (Rented Items Section... unchanged) */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Rental Items</Text>
-          
+          {/* ... (Logic for single or multi-item display) ... */}
           {isSingleItemRent ? (
-            // --- SINGLE ITEM (Rent Now) UI with Stepper ---
             <View style={[styles.itemRow, styles.lastItemRow]}>
               <Image source={{ uri: singleItem.img }} style={styles.itemImage} />
               <View style={styles.itemDetails}>
@@ -179,7 +176,6 @@ export default function CheckoutScreen({ route, navigation }) {
               </View>
             </View>
           ) : (
-            // --- MULTI-ITEM (Cart) UI (Read-only) ---
             items.map((item, index) => (
               <View 
                 key={item.id} 
@@ -197,26 +193,23 @@ export default function CheckoutScreen({ route, navigation }) {
               </View>
             ))
           )}
-
-          {/* Total Row (this logic is already correct) */}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total ({rentalDays} {rentalDays === 1 ? 'day' : 'days'}):</Text>
             <Text style={styles.totalValue}>₱{finalTotalPrice.toFixed(2)}</Text>
           </View>
         </View>
-        {/* --- END OF FIX --- */}
 
-
-        {/* (Payment Method Section... unchanged) */}
+        {/* --- THIS IS THE FIX (Part 4) --- */}
+        {/* --- New Payment Option Section --- */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Payment Method</Text>
+          <Text style={styles.sectionTitle}>Payment Option</Text>
           <TouchableOpacity 
             style={styles.paymentOption} 
-            onPress={() => setPaymentMethod('Cash')}
+            onPress={() => setPaymentType('Full')}
           >
-            <Text style={styles.paymentText}>Cash</Text>
+            <Text style={styles.paymentText}>Full Payment</Text>
             <MaterialCommunityIcons
-              name={paymentMethod === 'Cash' ? 'checkbox-marked' : 'checkbox-blank-outline'}
+              name={paymentType === 'Full' ? 'checkbox-marked' : 'checkbox-blank-outline'}
               size={24}
               color={PRIMARY_BLUE}
             />
@@ -224,30 +217,48 @@ export default function CheckoutScreen({ route, navigation }) {
           <View style={styles.divider} />
           <TouchableOpacity 
             style={styles.paymentOption} 
-            onPress={() => setPaymentMethod('GCash')}
+            onPress={() => setPaymentType('Downpayment')}
           >
-            <Text style={styles.paymentText}>GCash</Text>
+            <Text style={styles.paymentText}>Downpayment (50%)</Text>
             <MaterialCommunityIcons
-              name={paymentMethod === 'GCash' ? 'checkbox-marked' : 'checkbox-blank-outline'}
+              name={paymentType === 'Downpayment' ? 'checkbox-marked' : 'checkbox-blank-outline'}
               size={24}
               color={PRIMARY_BLUE}
             />
           </TouchableOpacity>
         </View>
+        
+        {/* --- Updated Payment Method Section --- */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Payment Method</Text>
+          <View style={styles.paymentOption}>
+            <Text style={styles.paymentText}>GCash</Text>
+            <MaterialCommunityIcons
+              name={'checkbox-marked'} // Always checked
+              size={24}
+              color={PRIMARY_BLUE}
+            />
+          </View>
+        </View>
+        {/* --- END OF FIX --- */}
 
       </ScrollView>
 
       {/* --- Footer - Pay Button --- */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.payButton} onPress={handlePay}>
-          <Text style={styles.payButtonText}>Pay</Text>
+          {/* --- THIS IS THE FIX (Part 5) --- */}
+          <Text style={styles.payButtonText}>
+            Pay ₱{amountToPay.toFixed(2)}
+          </Text>
+          {/* --- END OF FIX --- */}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
-// --- Styles (I've added the stepper styles from CartScreen) ---
+// (All styles are unchanged from the previous version)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -339,7 +350,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: TEXT_PRIMARY,
   },
-  // --- NEW STYLES (Copied from Cart) ---
   quantityStepper: {
     alignItems: 'center',
   },
@@ -349,7 +359,6 @@ const styles = StyleSheet.create({
     color: TEXT_PRIMARY,
     marginVertical: 8,
   },
-  // --- END NEW STYLES ---
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

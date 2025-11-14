@@ -1,27 +1,46 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 // Define colors
-const PRIMARY_BLUE = '#0029F3'; // Your new main color
+const PRIMARY_BLUE = '#0029F3'; 
 const WHITE = '#FFFFFF';
 const GRAY_LIGHT_BG = '#F3F4F6';
 const GRAY_MEDIUM = '#6B7280';
 const TEXT_PRIMARY = '#111827';
 const BORDER_LIGHT = '#E5E7EB';
+const YELLOW_PRIMARY = '#FDB022'; // For the new button
 
 export default function ReceiptScreen({ route, navigation }) {
-  // Get data passed from the Checkout screen
-  const { cartItems, totalPrice, rentalDates, paymentMethod } = route.params;
+  const {
+    cartItems,
+    totalPrice,
+    amountPaid,
+    paymentType,
+    rentalDates,
+    paymentMethod,
+  } = route.params;
+
+  const remainingBalance = totalPrice - amountPaid;
+
+  // --- THIS IS THE NEW FUNCTION ---
+  const handleContactOwner = () => {
+    // We'll just chat with the owner of the *first* item in the list
+    // A real app might need a chat per owner if there are multiple
+    const firstItemOwner = cartItems[0]?.owner || 'Owner'; 
+    navigation.navigate('Chat', {
+      userName: `Chat with ${firstItemOwner}`,
+    });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -33,7 +52,19 @@ export default function ReceiptScreen({ route, navigation }) {
           <Text style={styles.subHeaderText}>Thank you for your rental.</Text>
         </View>
 
-        {/* Rental Details */}
+        {/* --- THIS IS THE FIX --- */}
+        {/* Added "Contact Owner" button */}
+        <TouchableOpacity 
+          style={styles.contactButton} 
+          onPress={handleContactOwner}
+        >
+          <Feather name="message-square" size={20} color={TEXT_PRIMARY} />
+          <Text style={styles.contactButtonText}>Contact Owner to Arrange Pickup</Text>
+        </TouchableOpacity>
+        {/* --- END OF FIX --- */}
+
+
+        {/* (Rental Details... unchanged) */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Rental Period</Text>
           <View style={styles.detailRow}>
@@ -46,7 +77,7 @@ export default function ReceiptScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Rented Items */}
+        {/* (Rented Items... unchanged) */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Rented Items</Text>
           {cartItems.map((item, index) => (
@@ -65,13 +96,25 @@ export default function ReceiptScreen({ route, navigation }) {
               <Text style={styles.itemQuantity}>x{item.quantity}</Text>
             </View>
           ))}
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total:</Text>
-            <Text style={styles.totalValue}>₱{totalPrice.toFixed(2)}</Text>
+          <View style={styles.totalSection}>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Total Price:</Text>
+              <Text style={styles.totalValue}>₱{totalPrice.toFixed(2)}</Text>
+            </View>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>Amount Paid:</Text>
+              <Text style={styles.totalValue}>₱{amountPaid.toFixed(2)}</Text>
+            </View>
+            {paymentType === 'Downpayment' && (
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabelRemaining}>Remaining Balance:</Text>
+                <Text style={styles.totalValueRemaining}>₱{remainingBalance.toFixed(2)}</Text>
+              </View>
+            )}
           </View>
         </View>
 
-        {/* Payment Method */}
+        {/* (Payment Method... unchanged) */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Payment Method</Text>
           <View style={[styles.detailRow, { marginBottom: 0 }]}>
@@ -85,7 +128,6 @@ export default function ReceiptScreen({ route, navigation }) {
       <View style={styles.footer}>
         <TouchableOpacity 
           style={styles.doneButton} 
-          // popToTop() goes all the way back to the first screen in the stack (HomeScreen)
           onPress={() => navigation.popToTop()} 
         >
           <Text style={styles.doneButtonText}>Back to Home</Text>
@@ -107,7 +149,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     paddingVertical: 30,
-    marginBottom: 20,
+    marginBottom: 16, // Reduced margin
     backgroundColor: WHITE,
     borderRadius: 12,
     shadowColor: '#000',
@@ -127,6 +169,28 @@ const styles = StyleSheet.create({
     color: GRAY_MEDIUM,
     marginTop: 5,
   },
+  // --- NEW STYLES ---
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: YELLOW_PRIMARY,
+    paddingVertical: 14,
+    borderRadius: 10,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  contactButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: TEXT_PRIMARY,
+    marginLeft: 10,
+  },
+  // --- END NEW STYLES ---
   sectionCard: {
     backgroundColor: WHITE,
     borderRadius: 12,
@@ -200,21 +264,34 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: TEXT_PRIMARY,
   },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  totalSection: {
     marginTop: 15,
     paddingTop: 15,
     borderTopWidth: 1,
     borderTopColor: BORDER_LIGHT,
   },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
   totalLabel: {
-    fontSize: 18,
+    fontSize: 16,
     color: TEXT_PRIMARY,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   totalValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: TEXT_PRIMARY,
+  },
+  totalLabelRemaining: {
+    fontSize: 18,
+    color: PRIMARY_BLUE,
+    fontWeight: 'bold',
+  },
+  totalValueRemaining: {
     fontSize: 20,
     fontWeight: 'bold',
     color: PRIMARY_BLUE, 
@@ -227,7 +304,7 @@ const styles = StyleSheet.create({
     backgroundColor: WHITE,
     paddingVertical: 15,
     paddingHorizontal: 16,
-    paddingBottom: 24, // Extra space for home bar
+    paddingBottom: 24, 
     borderTopWidth: 1,
     borderTopColor: BORDER_LIGHT,
   },
