@@ -1,7 +1,8 @@
 import { Feather } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useUser } from '../context/UserContext'; 
 import { COLORS } from '../constants/colors';
 import { useCart } from '../context/CartContext';
 
@@ -11,10 +12,15 @@ import ProfileScreen from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
-// --- Cart Icon with Badge Component (Unchanged) ---
+// --- THIS IS THE FIX (Part 1) ---
+// Moved color constants to the top level so styles can access them
+const NAVY = '#0B2B66';
+const GRAY_MEDIUM = '#6B7280';
+// --- END OF FIX ---
+
+// --- Cart Icon (Unchanged) ---
 const CartIconWithBadge = ({ navigation }) => {
   const { itemCount } = useCart(); 
-
   return (
     <TouchableOpacity
       onPress={() => navigation.navigate('Cart')}
@@ -29,7 +35,7 @@ const CartIconWithBadge = ({ navigation }) => {
   );
 };
 
-// --- Header Icons Component (Unchanged) ---
+// --- Header Icons (Unchanged) ---
 const HeaderRightIcons = ({ navigation }) => {
   return (
     <View style={styles.headerRightContainer}>
@@ -44,27 +50,26 @@ const HeaderRightIcons = ({ navigation }) => {
   );
 };
 
-// --- THIS IS THE "POST" BUTTON (FIXED) ---
-const CustomTabButton = ({ children, onPress }) => (
+// --- "Post" button (Unchanged) ---
+const CustomTabButton = ({ onPress, isVerified }) => (
   <TouchableOpacity
     style={styles.fabContainer}
     onPress={onPress}
   >
-    <View style={styles.fab}>
-      {/* --- Adjusted icon size --- */}
-      <Feather name="plus" size={22} color="#FFFFFF" />
+    <View style={[styles.fab, !isVerified && styles.fabDisabled]}>
+      <Feather name={isVerified ? "plus" : "lock"} size={22} color="#FFFFFF" />
     </View>
   </TouchableOpacity>
 );
 
-// --- Dummy component for the "Post" tab ---
+// --- Dummy component (Unchanged) ---
 function PostDummyScreen() {
   return null;
 }
 
 export default function MainTabNavigator() {
-  const NAVY = '#0B2B66';
-  const GRAY_MEDIUM = '#6B7280';
+  // Get the user's verification status
+  const { isVerified, isPending } = useUser();
 
   return (
     <Tab.Navigator
@@ -84,7 +89,7 @@ export default function MainTabNavigator() {
         }
       }}
     >
-      {/* --- Tab 1: Home --- */}
+      {/* --- Tab 1: Home (Unchanged) --- */}
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -109,7 +114,7 @@ export default function MainTabNavigator() {
         })}
       />
       
-      {/* --- Tab 2: The new "Post" button --- */}
+      {/* --- Tab 2: The "Post" button (Unchanged) --- */}
       <Tab.Screen 
         name="Post" 
         component={PostDummyScreen} 
@@ -118,13 +123,32 @@ export default function MainTabNavigator() {
           tabBarIcon: () => null, 
           tabBarButton: () => (
             <CustomTabButton 
-              onPress={() => navigation.navigate('CreateListing')} 
+              isVerified={isVerified}
+              onPress={() => {
+                if (isVerified) {
+                  navigation.navigate('CreateListing');
+                } else if (isPending) {
+                  Alert.alert(
+                    "Verification Pending",
+                    "Your account is currently under review. We'll notify you once it's approved."
+                  );
+                } else {
+                  Alert.alert(
+                    "Verification Required",
+                    "You must be a verified user to list an item.",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Get Verified", onPress: () => navigation.navigate('Verification') }
+                    ]
+                  );
+                }
+              }} 
             />
           ),
         })}
       />
 
-      {/* --- Tab 3: Profile --- */}
+      {/* --- Tab 3: Profile (Unchanged) --- */}
       <Tab.Screen 
         name="Profile" 
         component={ProfileScreen} 
@@ -157,18 +181,17 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
-  // --- New styles for the FAB (FIXED) ---
   fabContainer: {
     position: 'relative',
-    width: 60, // <-- Smaller width for the tap area
+    width: 60, 
     alignItems: 'center',
   },
   fab: {
     position: 'absolute',
-    top: -22, // <-- Lifted up a bit less
-    width: 50, // <-- Smaller width
-    height: 50, // <-- Smaller height
-    borderRadius: 25, // <-- Half of new width/height
+    top: -22, 
+    width: 50, 
+    height: 50, 
+    borderRadius: 25, 
     backgroundColor: '#0029F3',
     justifyContent: 'center',
     alignItems: 'center',
@@ -178,7 +201,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 6,
   },
-  // --- End of FAB styles ---
+  // --- THIS IS THE FIX (Part 2) ---
+  // This style can now correctly read the GRAY_MEDIUM constant
+  fabDisabled: {
+    backgroundColor: GRAY_MEDIUM, 
+  },
+  // --- END OF FIX ---
   headerRightContainer: {
     flexDirection: 'row',
     alignItems: 'center',

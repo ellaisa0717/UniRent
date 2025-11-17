@@ -1,19 +1,22 @@
-import { Feather } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    FlatList,
-    KeyboardAvoidingView, // We still need this
-    Platform,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  SafeAreaView,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
-// We no longer need useHeaderHeight
-// import { useHeaderHeight } from '@react-navigation/elements';
+import { Feather } from '@expo/vector-icons';
+import { COLORS } from '../constants/colors';
+// --- THIS IS THE FIX (Part 1) ---
+// Import the hook that gets the header's height
+import { useHeaderHeight } from '@react-navigation/elements';
+// --- END OF FIX ---
 
 // Define colors
 const PRIMARY_BLUE = '#0029F3';
@@ -46,6 +49,11 @@ export default function ChatScreen({ route, navigation }) {
   const [messages, setMessages] = useState(SAMPLE_MESSAGES);
   const [inputText, setInputText] = useState('');
 
+  // --- THIS IS THE FIX (Part 2) ---
+  // Get the exact height of the navigator header
+  const headerHeight = useHeaderHeight();
+  // --- END OF FIX ---
+
   const onSend = () => {
     if (inputText.trim().length === 0) return;
     const newMessage = {
@@ -75,28 +83,25 @@ export default function ChatScreen({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={GRAY_LIGHT_BG} />
-      
-      {/* --- THIS IS THE FIX --- */}
-      {/* 1. The FlatList and the KAV are now *siblings* inside the SafeAreaView.
-        2. The FlatList has `flex: 1` to take up all available space.
-        3. The KAV only wraps the input bar.
-        4. The behavior is "padding", which will "push" the input bar up.
-      */}
-      <FlatList
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={item => item._id.toString()}
-        style={styles.chatList}
-        inverted 
-        contentContainerStyle={{ paddingVertical: 10 }}
-      />
+    // --- THIS IS THE FIX (Part 3) ---
+    // KeyboardAvoidingView is the root, using the *exact* headerHeight
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: WHITE }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight} 
+    >
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor={GRAY_LIGHT_BG} />
         
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        // We no longer need an offset
-      >
+        <FlatList
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={item => item._id.toString()}
+          style={styles.chatList}
+          inverted 
+          contentContainerStyle={{ paddingVertical: 10 }}
+        />
+        
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.textInput}
@@ -110,10 +115,9 @@ export default function ChatScreen({ route, navigation }) {
             <Feather name="send" size={22} color={WHITE} />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-      {/* --- END OF FIX --- */}
-
-    </SafeAreaView>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
+    // --- END OF FIX ---
   );
 }
 
@@ -124,7 +128,7 @@ const styles = StyleSheet.create({
     backgroundColor: WHITE,
   },
   chatList: {
-    flex: 1, // <-- This is key. It makes the list take all available space.
+    flex: 1,
     paddingHorizontal: 10,
   },
   bubbleContainer: {

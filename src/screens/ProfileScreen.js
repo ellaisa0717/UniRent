@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useUser } from '../context/UserContext'; 
 
 // Define colors
 const NAVY = '#0B2B66';
@@ -17,13 +18,77 @@ const GRAY_LIGHT_BG = '#F3F4F6';
 const GRAY_MEDIUM = '#6B7280';
 const TEXT_PRIMARY = '#111827';
 const BORDER_LIGHT = '#E5E7EB';
+const PRIMARY_BLUE = '#0029F3';
+const GREEN_PRIMARY = '#10B981';
+const YELLOW_PRIMARY = '#FDB022';
+
+// --- Verification Button Component (Unchanged) ---
+const VerificationMenuItem = ({ navigation }) => {
+  const { isVerified, isPending } = useUser();
+
+  let icon, title, titleColor, onPress;
+
+  if (isVerified) {
+    icon = "check-shield";
+    title = "Account Verified";
+    titleColor = GREEN_PRIMARY;
+    onPress = () => {}; 
+  } else if (isPending) {
+    icon = "clock";
+    title = "Pending Review";
+    titleColor = YELLOW_PRIMARY;
+    onPress = () => {}; 
+  } else {
+    icon = "shield";
+    title = "Get Verified";
+    titleColor = PRIMARY_BLUE;
+    onPress = () => navigation.navigate('Verification');
+  }
+
+  return (
+    <TouchableOpacity 
+      style={styles.menuItem} 
+      onPress={onPress} 
+      disabled={isVerified || isPending}
+    >
+      <View style={styles.menuIcon}> 
+        <Feather name={icon} size={20} color={titleColor} />
+      </View>
+      <Text style={[styles.menuItemText, { color: titleColor, fontWeight: 'bold' }]}>
+        {title}
+      </Text>
+      {!isVerified && !isPending && (
+        <Feather name="chevron-right" size={20} color={GRAY_MEDIUM} />
+      )}
+    </TouchableOpacity>
+  );
+};
+
+// --- Standard Menu Item Component (Unchanged) ---
+const MenuItem = ({ icon, title, onPress }) => (
+  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
+    <View style={styles.menuIcon}>
+      <Feather name={icon} size={20} color={NAVY} />
+    </View>
+    <Text style={styles.menuItemText}>{title}</Text>
+    <Feather name="chevron-right" size={20} color={GRAY_MEDIUM} />
+  </TouchableOpacity>
+);
+
 
 export default function ProfileScreen({ navigation }) {
-  const user = {
-    name: 'Justin Nabunturan',
-    major: 'Information Technology',
-    avatar: 'https.i.imgur.com/8Km9tcn.png', 
+  const { user } = useUser(); 
+
+  // --- THIS IS THE FIX (Part 1) ---
+  const handleLogout = () => {
+    // This command resets the entire navigation stack
+    // and sends the user back to the 'Welcome' screen.
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Welcome' }],
+    });
   };
+  // --- END OF FIX ---
 
   return (
     <SafeAreaView style={styles.container}>
@@ -35,22 +100,28 @@ export default function ProfileScreen({ navigation }) {
 
       <View style={styles.profileCard}>
         <Image
-          source={{ uri: user.avatar }}
+          source={{ uri: 'https://i.imgur.com/8Km9tcn.png' }} 
           style={styles.avatar}
         />
         <Text style={styles.profileName}>{user.name}</Text>
-        <Text style={styles.profileDetail}>{user.major}</Text>
+        <Text style={styles.profileDetail}>{user.student_id}</Text>
       </View>
 
-      {/* --- This is the menu for RENTERS --- */}
       <View style={styles.menuGroup}>
-        {/* --- THIS IS THE FIX --- */}
+        <VerificationMenuItem navigation={navigation} />
+      </View>
+
+      <View style={styles.menuGroup}>
         <MenuItem
-          icon="calendar" // Icon for rentals
+          icon="calendar"
           title="My Rentals"
-          onPress={() => navigation.navigate('MyRentals')} // <-- Corrected name
+          onPress={() => navigation.navigate('MyRentals')}
         />
-        {/* --- END OF FIX --- */}
+        <MenuItem
+          icon="clipboard" 
+          title="My Listings"
+          onPress={() => navigation.navigate('MyListings')} 
+        />
         <MenuItem
           icon="message-square"
           title="My Messages"
@@ -58,16 +129,6 @@ export default function ProfileScreen({ navigation }) {
         />
       </View>
 
-      {/* --- This is the menu for OWNERS/LISTERS --- */}
-      <View style={styles.menuGroup}>
-        <MenuItem
-          icon="clipboard" 
-          title="My Listings"
-          onPress={() => navigation.navigate('MyListings')} 
-        />
-      </View>
-
-      {/* --- This is the general app menu --- */}
       <View style={styles.menuGroup}>
         <MenuItem
           icon="user"
@@ -79,32 +140,20 @@ export default function ProfileScreen({ navigation }) {
           title="Settings"
           onPress={() => navigation.navigate('Settings')}
         />
-        <MenuItem
-          icon="help-circle"
-          title="Help & Support"
-          onPress={() => {}} 
-        />
       </View>
 
-      <TouchableOpacity style={styles.logoutButton}>
+      {/* --- THIS IS THE FIX (Part 2) --- */}
+      {/* Added the onPress prop */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <MaterialCommunityIcons name="logout" size={20} color={NAVY} />
         <Text style={styles.logoutButtonText}>Log Out</Text>
       </TouchableOpacity>
+      {/* --- END OF FIX --- */}
     </SafeAreaView>
   );
 }
 
-// (Helper component and styles are unchanged)
-const MenuItem = ({ icon, title, onPress }) => (
-  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-    <View style={styles.menuIcon}>
-      <Feather name={icon} size={20} color={NAVY} />
-    </View>
-    <Text style={styles.menuItemText}>{title}</Text>
-    <Feather name="chevron-right" size={20} color={GRAY_MEDIUM} />
-  </TouchableOpacity>
-);
-
+// (Styles are unchanged)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -131,7 +180,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   avatar: {
     width: 90,
@@ -190,7 +239,7 @@ const styles = StyleSheet.create({
     backgroundColor: WHITE,
     borderRadius: 16,
     marginHorizontal: 16,
-    marginTop: 8, 
+    marginTop: 0, 
     paddingVertical: 16,
     flexDirection: 'row',
     justifyContent: 'center',
