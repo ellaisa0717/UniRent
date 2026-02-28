@@ -2,7 +2,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import React from 'react';
 
-// (Your other imports)
+// (Existing imports)
 import CartScreen from '../screens/CartScreen';
 import ChatListScreen from '../screens/ChatListScreen';
 import ChatScreen from '../screens/ChatScreen';
@@ -23,12 +23,10 @@ import SettingsScreen from '../screens/SettingsScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import MainTabNavigator from './MainTabNavigator';
 import CalendarScreen from '../screens/CalendarScreen';
-
-// --- THIS IS THE FIX (Part 1) ---
-// Add import for the new screen
 import VerificationScreen from '../screens/VerificationScreen';
-// --- END OF FIX ---
 
+// --- NEW IMPORT ---
+import DashboardScreen from '../screens/DashboardScreen'; 
 
 const Stack = createStackNavigator();
 
@@ -39,14 +37,17 @@ export default function AppNavigator() {
         initialRouteName="Welcome" 
         screenOptions={{ headerShown: false }}
       >
-        {/* --- Main App Stack --- */}
         <Stack.Group>
-          {/* (All your other screens) */}
           <Stack.Screen name="Welcome" component={WelcomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          
+          {/* This is the entry point to your Tabs (Dashboard, Home, Profile) */}
           <Stack.Screen name="HomeTabs" component={MainTabNavigator} />
           
+          {/* --- ADDED DASHBOARD HERE TO ENSURE STACK ACCESS --- */}
+          <Stack.Screen name="Dashboard" component={DashboardScreen} />
+
           <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Edit Profile', headerStyle: { backgroundColor: '#F3F4F6' }, headerShadowVisible: false, headerTitleAlign: 'center' }} />
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings', headerStyle: { backgroundColor: '#F3F4F6' }, headerShadowVisible: false, headerTitleAlign: 'center' }} />
           <Stack.Screen name="ConfigureSettings" component={ConfigureSettingsScreen} options={{ headerShown: true, title: 'Configure Settings', headerStyle: { backgroundColor: '#F3F4F6' }, headerShadowVisible: false, headerTitleAlign: 'center' }} />
@@ -60,49 +61,14 @@ export default function AppNavigator() {
           <Stack.Screen name="MyListings" component={MyListingsScreen} options={{ headerShown: true, title: 'My Listings', headerStyle: { backgroundColor: '#F3F4F6' }, headerShadowVisible: false, headerTitleAlign: 'center' }} />
           <Stack.Screen name="RentalDetails" component={RentalDetailsScreen} options={{ headerShown: true, title: 'Rental Details', headerStyle: { backgroundColor: '#F3F4F6' }, headerShadowVisible: false, headerTitleAlign: 'center' }} />
           <Stack.Screen name="MyRentals" component={MyRentalsScreen} options={{ headerShown: true, title: 'My Rentals', headerStyle: { backgroundColor: '#F3F4F6' }, headerShadowVisible: false, headerTitleAlign: 'center' }} />
-
-          {/* --- THIS IS THE FIX (Part 2) --- */}
-          {/* Register the new screen */}
-          <Stack.Screen 
-            name="Verification" 
-            component={VerificationScreen}
-            options={{
-              headerShown: true,
-              title: 'Account Verification',
-              headerStyle: { backgroundColor: '#F3F4F6' },
-              headerShadowVisible: false,
-              headerTitleAlign: 'center',
-            }}
-          />
-          {/* --- END OF FIX --- */}
-
+          <Stack.Screen name="Verification" component={VerificationScreen} options={{ headerShown: true, title: 'Account Verification', headerStyle: { backgroundColor: '#F3F4F6' }, headerShadowVisible: false, headerTitleAlign: 'center' }} />
         </Stack.Group>
         
-        {/* --- Modal Stack Group --- */}
         <Stack.Group screenOptions={{ presentation: 'modal' }}>
-          <Stack.Screen 
-            name="CreateListing" 
-            component={CreateListingScreen} 
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen 
-            name="LeaveReview" 
-            component={LeaveReviewScreen} 
-            options={{
-              headerShown: false,
-            }}
-          />
-          <Stack.Screen 
-            name="Calendar" 
-            component={CalendarScreen} 
-            options={{
-              headerShown: false,
-            }}
-          />
+          <Stack.Screen name="CreateListing" component={CreateListingScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="LeaveReview" component={LeaveReviewScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Calendar" component={CalendarScreen} options={{ headerShown: false }} />
         </Stack.Group>
-        
       </Stack.Navigator>
     </NavigationContainer>
   );

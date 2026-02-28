@@ -169,10 +169,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   footer: {
-    // We remove 'position: absolute' so it works with KeyboardAvoidingView
+   
     backgroundColor: WHITE,
     padding: 16,
-    paddingBottom: 24, // Home bar spacing
+    paddingBottom: 24, 
     borderTopWidth: 1,
     borderTopColor: BORDER_LIGHT,
   },
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButtonDisabled: {
-    backgroundColor: '#FDE68A', // Lighter yellow
+    backgroundColor: '#FDE68A', 
   },
   submitButtonText: {
     color: TEXT_PRIMARY,

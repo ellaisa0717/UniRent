@@ -9,16 +9,15 @@ import { useCart } from '../context/CartContext';
 // Import Screens
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+// --- NEW LINE ADDED ---
+import DashboardScreen from '../screens/DashboardScreen'; 
 
 const Tab = createBottomTabNavigator();
 
-// --- THIS IS THE FIX (Part 1) ---
-// Moved color constants to the top level so styles can access them
 const NAVY = '#0B2B66';
 const GRAY_MEDIUM = '#6B7280';
-// --- END OF FIX ---
 
-// --- Cart Icon (Unchanged) ---
+// --- Cart Icon ---
 const CartIconWithBadge = ({ navigation }) => {
   const { itemCount } = useCart(); 
   return (
@@ -35,7 +34,7 @@ const CartIconWithBadge = ({ navigation }) => {
   );
 };
 
-// --- Header Icons (Unchanged) ---
+// --- Header Icons ---
 const HeaderRightIcons = ({ navigation }) => {
   return (
     <View style={styles.headerRightContainer}>
@@ -50,7 +49,7 @@ const HeaderRightIcons = ({ navigation }) => {
   );
 };
 
-// --- "Post" button (Unchanged) ---
+// --- "Post" button ---
 const CustomTabButton = ({ onPress, isVerified }) => (
   <TouchableOpacity
     style={styles.fabContainer}
@@ -62,13 +61,11 @@ const CustomTabButton = ({ onPress, isVerified }) => (
   </TouchableOpacity>
 );
 
-// --- Dummy component (Unchanged) ---
 function PostDummyScreen() {
   return null;
 }
 
 export default function MainTabNavigator() {
-  // Get the user's verification status
   const { isVerified, isPending } = useUser();
 
   return (
@@ -89,7 +86,18 @@ export default function MainTabNavigator() {
         }
       }}
     >
-      {/* --- Tab 1: Home (Unchanged) --- */}
+      {/* --- NEW TAB ADDED: Dashboard (First Screen) --- */}
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Feather name="grid" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* --- Tab 2: Home --- */}
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -109,12 +117,12 @@ export default function MainTabNavigator() {
           ),
           headerRight: () => <HeaderRightIcons navigation={navigation} />,
           tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+            <Feather name="shopping-bag" size={size} color={color} />
           ),
         })}
       />
       
-      {/* --- Tab 2: The "Post" button (Unchanged) --- */}
+      {/* --- Tab 3: The "Post" button --- */}
       <Tab.Screen 
         name="Post" 
         component={PostDummyScreen} 
@@ -130,7 +138,7 @@ export default function MainTabNavigator() {
                 } else if (isPending) {
                   Alert.alert(
                     "Verification Pending",
-                    "Your account is currently under review. We'll notify you once it's approved."
+                    "Your account is currently under review."
                   );
                 } else {
                   Alert.alert(
@@ -148,7 +156,7 @@ export default function MainTabNavigator() {
         })}
       />
 
-      {/* --- Tab 3: Profile (Unchanged) --- */}
+      {/* --- Tab 4: Profile --- */}
       <Tab.Screen 
         name="Profile" 
         component={ProfileScreen} 
@@ -201,12 +209,9 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 6,
   },
-  // --- THIS IS THE FIX (Part 2) ---
-  // This style can now correctly read the GRAY_MEDIUM constant
   fabDisabled: {
     backgroundColor: GRAY_MEDIUM, 
   },
-  // --- END OF FIX ---
   headerRightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
