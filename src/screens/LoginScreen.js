@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { COLORS } from '../constants/colors';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
@@ -7,6 +7,16 @@ import CustomButton from '../components/CustomButton';
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Requirement: State-driven interaction
+  const handleLogin = () => {
+    if (!email || !password) {
+      Alert.alert("Input Required", "Please enter both Email and Password to proceed.");
+      return;
+    }
+    // Requirement: Navigation triggered via UI element
+    navigation.replace('HomeTabs');
+  };
 
   return (
     <View style={styles.container}>
@@ -16,12 +26,14 @@ export default function LoginScreen({ navigation }) {
             <Text style={{ fontSize: 48, fontWeight: '900', color: COLORS.secondary }}>
               Uni<Text style={{ color: COLORS.primary }}>Rent</Text>
             </Text>
+            <Text style={{ color: COLORS.textSecondary }}>Mobile Interaction & State (Lab 7)</Text>
           </View>
 
           <View style={{ width: '100%' }}>
+            {/* Requirement: Controlled Components */}
             <CustomInput
               label="Email or Student ID"
-              placeholder="Email or Student ID"
+              placeholder="e.g. 2024-12345"
               value={email}
               onChangeText={setEmail}
             />
@@ -37,7 +49,7 @@ export default function LoginScreen({ navigation }) {
               <Text style={{ color: COLORS.textSecondary, fontSize: 13 }}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <CustomButton title="Log in" onPress={() => navigation.replace('HomeTabs')} style={{ marginTop: 16 }} />
+            <CustomButton title="Log in" onPress={handleLogin} style={{ marginTop: 16 }} />
 
             <View style={styles.footer}>
               <Text style={{ color: COLORS.textPrimary }}>Don't have an account? </Text>
