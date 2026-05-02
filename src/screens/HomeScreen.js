@@ -193,3 +193,6 @@ const styles = StyleSheet.create({
   disabledButton: { backgroundColor: '#F1F5F9' },
   addButtonText: { color: '#1E293B', fontWeight: 'bold', fontSize: 12 }
 });
+
+
+//s
