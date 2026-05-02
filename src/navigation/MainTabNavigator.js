@@ -1,16 +1,14 @@
 import { Feather } from '@expo/vector-icons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import { Alert, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useUser } from '../context/UserContext'; 
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { COLORS } from '../constants/colors';
 import { useCart } from '../context/CartContext';
 
-// Import Screens
+// Import MVP Screens
+import DashboardScreen from '../screens/DashboardScreen';
 import HomeScreen from '../screens/HomeScreen';
 import ProfileScreen from '../screens/ProfileScreen';
-// --- NEW LINE ADDED ---
-import DashboardScreen from '../screens/DashboardScreen'; 
 
 const Tab = createBottomTabNavigator();
 
@@ -21,9 +19,7 @@ const GRAY_MEDIUM = '#6B7280';
 const CartIconWithBadge = ({ navigation }) => {
   const { itemCount } = useCart(); 
   return (
-    <TouchableOpacity
-      onPress={() => navigation.navigate('Cart')}
-    >
+    <TouchableOpacity onPress={() => navigation.navigate('Cart')}>
       <Feather name="shopping-cart" size={24} color="#0F172A" />
       {itemCount > 0 && (
         <View style={styles.badgeContainer}>
@@ -34,40 +30,16 @@ const CartIconWithBadge = ({ navigation }) => {
   );
 };
 
-// --- Header Icons ---
+// --- Header Icons (Cleaned up: Cart only) ---
 const HeaderRightIcons = ({ navigation }) => {
   return (
     <View style={styles.headerRightContainer}>
-      <TouchableOpacity 
-        style={styles.headerIcon}
-        onPress={() => navigation.navigate('Notifications')}
-      >
-        <Feather name="bell" size={24} color="#0F172A" />
-      </TouchableOpacity>
       <CartIconWithBadge navigation={navigation} />
     </View>
   );
 };
 
-// --- "Post" button ---
-const CustomTabButton = ({ onPress, isVerified }) => (
-  <TouchableOpacity
-    style={styles.fabContainer}
-    onPress={onPress}
-  >
-    <View style={[styles.fab, !isVerified && styles.fabDisabled]}>
-      <Feather name={isVerified ? "plus" : "lock"} size={22} color="#FFFFFF" />
-    </View>
-  </TouchableOpacity>
-);
-
-function PostDummyScreen() {
-  return null;
-}
-
 export default function MainTabNavigator() {
-  const { isVerified, isPending } = useUser();
-
   return (
     <Tab.Navigator
       screenOptions={{
@@ -86,7 +58,7 @@ export default function MainTabNavigator() {
         }
       }}
     >
-      {/* --- NEW TAB ADDED: Dashboard (First Screen) --- */}
+      {/* --- Tab 1: Dashboard --- */}
       <Tab.Screen
         name="Dashboard"
         component={DashboardScreen}
@@ -97,7 +69,7 @@ export default function MainTabNavigator() {
         }}
       />
 
-      {/* --- Tab 2: Home --- */}
+      {/* --- Tab 2: Home (Marketplace) --- */}
       <Tab.Screen
         name="Home"
         component={HomeScreen}
@@ -121,42 +93,8 @@ export default function MainTabNavigator() {
           ),
         })}
       />
-      
-      {/* --- Tab 3: The "Post" button --- */}
-      <Tab.Screen 
-        name="Post" 
-        component={PostDummyScreen} 
-        options={({ navigation }) => ({
-          tabBarLabel: () => null, 
-          tabBarIcon: () => null, 
-          tabBarButton: () => (
-            <CustomTabButton 
-              isVerified={isVerified}
-              onPress={() => {
-                if (isVerified) {
-                  navigation.navigate('CreateListing');
-                } else if (isPending) {
-                  Alert.alert(
-                    "Verification Pending",
-                    "Your account is currently under review."
-                  );
-                } else {
-                  Alert.alert(
-                    "Verification Required",
-                    "You must be a verified user to list an item.",
-                    [
-                      { text: "Cancel", style: "cancel" },
-                      { text: "Get Verified", onPress: () => navigation.navigate('Verification') }
-                    ]
-                  );
-                }
-              }} 
-            />
-          ),
-        })}
-      />
 
-      {/* --- Tab 4: Profile --- */}
+      {/* --- Tab 3: Profile --- */}
       <Tab.Screen 
         name="Profile" 
         component={ProfileScreen} 
@@ -189,35 +127,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
-  fabContainer: {
-    position: 'relative',
-    width: 60, 
-    alignItems: 'center',
-  },
-  fab: {
-    position: 'absolute',
-    top: -22, 
-    width: 50, 
-    height: 50, 
-    borderRadius: 25, 
-    backgroundColor: '#0029F3',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 6,
-  },
-  fabDisabled: {
-    backgroundColor: GRAY_MEDIUM, 
-  },
   headerRightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16, 
-  },
-  headerIcon: {
     marginRight: 16, 
   },
 });

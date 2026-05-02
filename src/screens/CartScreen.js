@@ -1,18 +1,17 @@
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    FlatList,
-    Image,
-    SafeAreaView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  FlatList,
+  Image,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useCart } from '../context/CartContext';
 
-// Define colors
 const NAVY = '#0B2B66';
 const WHITE = '#FFFFFF';
 const GRAY_LIGHT_BG = '#F3F4F6';
@@ -21,8 +20,11 @@ const TEXT_PRIMARY = '#111827';
 const BORDER_LIGHT = '#E5E7EB';
 const YELLOW_PRIMARY = '#FDB022';
 
-// --- Cart Item Component (Unchanged) ---
-const CartItem = ({ item, onRemove, onUpdateQty, onToggleCheck }) => {
+const CartItem = ({ item, onRemove, onToggleCheck }) => {
+  const imageUrl = item.image 
+    ? (item.image.startsWith('http') ? item.image : `http://192.168.5.95:8000${item.image}`) 
+    : null;
+
   return (
     <View style={styles.card}>
       <View style={styles.itemRow}>
@@ -33,19 +35,18 @@ const CartItem = ({ item, onRemove, onUpdateQty, onToggleCheck }) => {
             color={NAVY}
           />
         </TouchableOpacity>
-        <Image source={{ uri: item.img }} style={styles.itemImage} />
+        
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.itemImage} />
+        ) : (
+          <View style={[styles.itemImage, { justifyContent: 'center', alignItems: 'center' }]}>
+            <Text style={{fontSize: 10, color: GRAY_MEDIUM}}>No Image</Text>
+          </View>
+        )}
+        
         <View style={styles.itemDetails}>
           <Text style={styles.itemTitle}>{item.title}</Text>
-          <Text style={styles.itemSpecs} numberOfLines={3}>{item.specs}</Text>
-        </View>
-        <View style={styles.quantityStepper}>
-          <TouchableOpacity onPress={() => onUpdateQty(1)}>
-            <Feather name="plus-circle" size={20} color={GRAY_MEDIUM} />
-          </TouchableOpacity>
-          <Text style={styles.quantityText}>{item.quantity}</Text>
-          <TouchableOpacity onPress={() => onUpdateQty(-1)}>
-            <Feather name="minus-circle" size={20} color={GRAY_MEDIUM} />
-          </TouchableOpacity>
+          <Text style={styles.itemSpecs}>{item.category}</Text>
         </View>
       </View>
       <View style={styles.itemFooter}>
@@ -58,22 +59,21 @@ const CartItem = ({ item, onRemove, onUpdateQty, onToggleCheck }) => {
   );
 };
 
-// --- Main Cart Screen ---
 export default function CartScreen({ navigation }) {
   const {
     cartItems,
     removeFromCart,
-    updateQuantity,
     toggleItemChecked,
     toggleSelectAll,
-    totalPrice, // This is the total of *checked* items
+    totalPrice, 
     isAllChecked,
   } = useCart();
 
-  // --- THIS IS THE FIX (Part 1) ---
-  // Get the actual array of checked items
   const checkedItems = cartItems.filter(item => item.checked);
-  // --- END OF FIX ---
+  
+  // Aligning with Web MVP Logic
+  const serviceFee = 50;
+  const finalTotal = checkedItems.length > 0 ? totalPrice + serviceFee : 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -81,12 +81,11 @@ export default function CartScreen({ navigation }) {
       
       <FlatList
         data={cartItems} 
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <CartItem
             item={item}
             onRemove={() => removeFromCart(item.id)}
-            onUpdateQty={(amount) => updateQuantity(item.id, amount)}
             onToggleCheck={() => toggleItemChecked(item.id)}
           />
         )}
@@ -96,8 +95,8 @@ export default function CartScreen({ navigation }) {
           <View style={styles.emptyContainer}>
             <Feather name="shopping-cart" size={60} color={GRAY_MEDIUM} />
             <Text style={styles.emptyText}>Your cart is empty</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Home')}>
-              <Text style={styles.browseText}>Start browsing</Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Text style={styles.browseText}>Continue Browsing</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -106,193 +105,62 @@ export default function CartScreen({ navigation }) {
       {/* --- Footer --- */}
       {cartItems.length > 0 && (
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.checkAllRow} onPress={toggleSelectAll}>
-            <MaterialCommunityIcons
-              name={isAllChecked ? 'checkbox-marked' : 'checkbox-blank-outline'}
-              size={24}
-              color={NAVY}
-            />
-            <Text style={styles.checkAllText}>All</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.totalRow}>
-            <Text style={styles.totalText}>Total: </Text>
-            <Text style={styles.totalPrice}>₱{totalPrice.toFixed(2)}</Text>
+          <View style={styles.summaryBox}>
+            <TouchableOpacity style={styles.checkAllRow} onPress={toggleSelectAll}>
+              <MaterialCommunityIcons
+                name={isAllChecked ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                size={24}
+                color={NAVY}
+              />
+              <Text style={styles.checkAllText}>Select All</Text>
+            </TouchableOpacity>
+            
+            <View style={{ alignItems: 'flex-end' }}>
+              <Text style={styles.serviceFeeText}>Service Fee: ₱{serviceFee.toFixed(2)}</Text>
+              <Text style={styles.totalText}>Total: <Text style={styles.totalPrice}>₱{finalTotal.toFixed(2)}</Text></Text>
+            </View>
           </View>
 
-          {/* --- THIS IS THE FIX (Part 2) --- */}
           <TouchableOpacity 
-            style={[
-              styles.checkoutButton, 
-              checkedItems.length === 0 && styles.checkoutButtonDisabled
-            ]}
-            // Pass the checked items and their total base price
+            style={[styles.checkoutButton, checkedItems.length === 0 && styles.checkoutButtonDisabled]}
             onPress={() => navigation.navigate('Checkout', {
               items: checkedItems,
-              total: totalPrice,
+              total: finalTotal, // Pass the final amount including service fee
             })}
             disabled={checkedItems.length === 0}
           >
-            <Text style={styles.checkoutText}>Check Out</Text>
+            <Text style={styles.checkoutText}>Proceed to Checkout</Text>
           </TouchableOpacity>
-          {/* --- END OF FIX --- */}
-          
         </View>
       )}
     </SafeAreaView>
   );
 }
 
-// --- Styles (Unchanged, but added one new style) ---
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: GRAY_LIGHT_BG,
-  },
-  listContainer: {
-    padding: 16,
-    paddingBottom: 100,
-  },
-  card: {
-    backgroundColor: WHITE,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  checkbox: {
-    marginRight: 8,
-    marginTop: 4,
-  },
-  itemImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 8,
-    backgroundColor: GRAY_LIGHT_BG,
-    borderWidth: 1,
-    borderColor: BORDER_LIGHT,
-  },
-  itemDetails: {
-    flex: 1,
-    marginLeft: 12,
-    marginRight: 8,
-  },
-  itemTitle: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: TEXT_PRIMARY,
-  },
-  itemSpecs: {
-    fontSize: 12,
-    color: GRAY_MEDIUM,
-    marginTop: 4,
-    lineHeight: 16,
-  },
-  quantityStepper: {
-    alignItems: 'center',
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: TEXT_PRIMARY,
-    marginVertical: 8,
-  },
-  itemFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 12,
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: BORDER_LIGHT,
-  },
-  removeText: {
-    fontSize: 14,
-    color: GRAY_MEDIUM,
-    fontWeight: '600',
-  },
-  priceText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: NAVY,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    paddingBottom: 24, 
-    backgroundColor: WHITE,
-    borderTopWidth: 1,
-    borderTopColor: BORDER_LIGHT,
-  },
-  checkAllRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  checkAllText: {
-    fontSize: 16,
-    color: TEXT_PRIMARY,
-    marginLeft: 8,
-    fontWeight: '600',
-  },
-  totalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  totalText: {
-    fontSize: 16,
-    color: TEXT_PRIMARY,
-  },
-  totalPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: NAVY,
-  },
-  checkoutButton: {
-    backgroundColor: YELLOW_PRIMARY,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  // --- NEW STYLE ---
-  checkoutButtonDisabled: {
-    backgroundColor: '#FDE68A', // A lighter yellow
-  },
-  checkoutText: {
-    color: TEXT_PRIMARY,
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 100,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: GRAY_MEDIUM,
-    marginTop: 15,
-  },
-  browseText: {
-    fontSize: 16,
-    color: NAVY,
-    fontWeight: 'bold',
-    marginTop: 10,
-    padding: 10,
-  },
+  container: { flex: 1, backgroundColor: GRAY_LIGHT_BG },
+  listContainer: { padding: 16, paddingBottom: 150 },
+  card: { backgroundColor: WHITE, borderRadius: 12, padding: 12, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 3 },
+  itemRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  checkbox: { marginRight: 8, marginTop: 20 },
+  itemImage: { width: 70, height: 70, borderRadius: 8, backgroundColor: GRAY_LIGHT_BG, borderWidth: 1, borderColor: BORDER_LIGHT },
+  itemDetails: { flex: 1, marginLeft: 12, justifyContent: 'center' },
+  itemTitle: { fontSize: 16, fontWeight: 'bold', color: TEXT_PRIMARY, marginBottom: 4 },
+  itemSpecs: { fontSize: 13, color: GRAY_MEDIUM, textTransform: 'uppercase', fontWeight: 'bold' },
+  itemFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, marginTop: 12, borderTopWidth: 1, borderTopColor: BORDER_LIGHT },
+  removeText: { fontSize: 14, color: '#EF4444', fontWeight: '600' },
+  priceText: { fontSize: 16, fontWeight: 'bold', color: NAVY },
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingVertical: 16, paddingHorizontal: 16, paddingBottom: 24, backgroundColor: WHITE, borderTopWidth: 1, borderTopColor: BORDER_LIGHT },
+  summaryBox: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  checkAllRow: { flexDirection: 'row', alignItems: 'center' },
+  checkAllText: { fontSize: 14, color: TEXT_PRIMARY, marginLeft: 8, fontWeight: '600' },
+  serviceFeeText: { fontSize: 12, color: GRAY_MEDIUM, marginBottom: 2 },
+  totalText: { fontSize: 16, color: TEXT_PRIMARY },
+  totalPrice: { fontSize: 18, fontWeight: 'bold', color: NAVY },
+  checkoutButton: { backgroundColor: YELLOW_PRIMARY, paddingVertical: 14, borderRadius: 8, alignItems: 'center' },
+  checkoutButtonDisabled: { backgroundColor: '#FDE68A' },
+  checkoutText: { color: TEXT_PRIMARY, fontWeight: 'bold', fontSize: 16 },
+  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
+  emptyText: { fontSize: 18, color: GRAY_MEDIUM, marginTop: 15 },
+  browseText: { fontSize: 16, color: NAVY, fontWeight: 'bold', marginTop: 10, padding: 10 },
 });

@@ -1,324 +1,195 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import {
-  Dimensions,
-  FlatList,
-  Image,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import HomeHeader from '../components/HomeHeader';
-import { COLORS } from '../constants/colors';
+import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useCart } from '../context/CartContext';
 
-const { width } = Dimensions.get('window');
-const CARD_GAP = 16;
-const CARD_W = (width - 16 * 2 - CARD_GAP) / 2; 
-
-// --- Products with Ratings ---
-const PRODUCTS = [
-  // Microcontrollers
-  {
-    id: 'uno',
-    title: 'ARDUINO UNO R3',
-    category: 'microcontrollers',
-    desc: '...',
-    img: 'https://i.imgur.com/Zy2Qk8G.png',
-    price: 25, 
-    owner: 'Justin N.', 
-    rating: 4.8, // <-- ADDED
-    reviewCount: 25, // <-- ADDED
-  },
-  {
-    id: 'mega',
-    title: 'ARDUINO MEGA 2560',
-    category: 'microcontrollers',
-    desc: '...',
-    img: 'https://i.imgur.com/2O6pY1y.png',
-    price: 45, 
-    owner: 'Ellaisa F.', 
-    rating: 4.5, // <-- ADDED
-    reviewCount: 12, // <-- ADDED
-  },
-  {
-    id: 'esp32',
-    title: 'ESP32 DEVELOPMENT BOARD',
-    category: 'microcontrollers',
-    desc: '...',
-    img: 'https://i.imgur.com/Xx8Q1o7.png',
-    price: 30, 
-    owner: 'John D.', 
-    rating: 4.9, // <-- ADDED
-    reviewCount: 40, // <-- ADDED
-  },
-  {
-    id: 'esp8266',
-    title: 'ESP8266 NODEMCU',
-    category: 'microcontrollers',
-    desc: '...',
-    img: 'https://i.imgur.com/5L7Bfwn.png',
-    price: 20, 
-    owner: 'Jane S.', 
-    rating: 4.6, // <-- ADDED
-    reviewCount: 18, // <-- ADDED
-  },
-
-  // Single-board computers
-  {
-    id: 'pi-zero',
-    title: 'RASPBERRY PI ZERO W',
-    category: 'sbc',
-    desc: '...',
-    img: 'https://i.imgur.com/2c5Y4Y6.png',
-    price: 50, 
-    owner: 'Justin N.', 
-    rating: 5.0, // <-- ADDED
-    reviewCount: 10, // <-- ADDED
-  },
-  {
-    id: 'jetson',
-    title: 'NVIDIA JETSON NANO',
-    category: 'sbc',
-    desc: '...',
-    img: 'https://i.imgur.com/1sJQ2sC.png',
-    price: 150, 
-    owner: 'Alex M.', 
-    rating: 4.7, // <-- ADDED
-    reviewCount: 8, // <-- ADDED
-  },
-  {
-    id: 'pi4',
-    title: 'RASPBERRY PI 4 MODEL B',
-    category: 'sbc',
-    desc: '...',
-    img: 'https://i.imgur.com/0quD8jC.png',
-    price: 75, 
-    owner: 'Ellaisa F.', 
-    rating: 4.9, // <-- ADDED
-    reviewCount: 22, // <-- ADDED
-  },
-  {
-    id: 'dht22',
-    title: 'DHT22 TEMPERATURE & HUMIDITY',
-    category: 'sensors',
-    desc: '...',
-    img: 'https://i.imgur.com/9yJYz3U.png',
-    price: 15, 
-    owner: 'Justin N.', 
-    rating: 4.5, // <-- ADDED
-    reviewCount: 7, // <-- ADDED
-  },
-
-  // Sensors
-  {
-    id: 'pir',
-    title: 'PIR MOTION SENSOR',
-    category: 'sensors',
-    desc: '...',
-    img: 'https://i.imgur.com/ba8K1rU.png',
-    price: 20, 
-    owner: 'Maria C.', 
-    rating: 4.3, // <-- ADDED
-    reviewCount: 14, // <-- ADDED
-  },
-  {
-    id: 'mq2',
-    title: 'MQ-2 GAS SENSOR',
-    category: 'sensors',
-    desc: '...',
-    img: 'https://i.imgur.com/NwV0cJX.png',
-    price: 18, 
-    owner: 'John D.', 
-    rating: 4.8, // <-- ADDED
-    reviewCount: 19, // <-- ADDED
-  },
-  {
-    id: 'hc-sr04',
-    title: 'HC-SR04 ULTRASONIC DISTANCE',
-    category: 'sensors',
-    desc: '...',
-    img: 'https://i.imgur.com/0eXH6Vq.png',
-    price: 10, 
-    owner: 'Jane S.', 
-    rating: 4.4, // <-- ADDED
-    reviewCount: 31, // <-- ADDED
-  },
-
-  // Modules
-  {
-    id: 'servo-mg996r',
-    title: 'MG996R SERVO MOTOR',
-    category: 'modules',
-    desc: '...',
-    img: 'https://i.imgur.com/b83r0Zg.png',
-    price: 22, 
-    owner: 'Justin N.', 
-    rating: 4.7, // <-- ADDED
-    reviewCount: 5, // <-- ADDED
-  },
-  {
-    id: 'l298n',
-    title: 'L298N MOTOR DRIVER + DC',
-    category: 'modules',
-    desc: '...',
-    img: 'https://i.imgur.com/1i9Q3Pz.png',
-    price: 25, 
-    owner: 'Alex M.', 
-    rating: 4.5, // <-- ADDED
-    reviewCount: 9, // <-- ADDED
-  },
-  {
-    id: 'sg90',
-    title: 'SG90 SERVO MOTOR',
-    category: 'modules',
-    desc: '...',
-    img: 'https://i.imgur.com/qDA3C1T.png',
-    price: 12, 
-    owner: 'Ellaisa F.', 
-    rating: 4.6, // <-- ADDED
-    reviewCount: 20, // <-- ADDED
-  },
-  {
-    id: 'relay4',
-    title: 'RELAY MODULE (4-CHANNEL)',
-    category: 'modules',
-    desc: '...',
-    img: 'https://i.imgur.com/XoW9R9t.png',
-    price: 30, 
-    owner: 'Maria C.', 
-    rating: 5.0, // <-- ADDED
-    reviewCount: 3, // <-- ADDED
-  },
-  {
-    id: 'hc05',
-    title: 'HC-05 BLUETOOTH MODULE',
-    category: 'modules',
-    desc: '...',
-    img: 'https://i.imgur.com/ya3iU0f.png',
-    price: 28, 
-    owner: 'Justin N.', 
-    rating: 4.8, // <-- ADDED
-    reviewCount: 11, // <-- ADDED
-  },
-  {
-    id: 'neo6m',
-    title: 'NEO-6M GPS MODULE',
-    category: 'modules',
-    desc: '...',
-    img: 'https://i.imgur.com/6Jx2z0M.png',
-    price: 35, 
-    owner: 'John D.', 
-    rating: 4.7, // <-- ADDED
-    reviewCount: 6, // <-- ADDED
-  },
-
-  // Power
-  {
-    id: 'breadboard-psu',
-    title: 'BREADBOARD POWER SUPPLY',
-    category: 'power',
-    desc: '...',
-    img: 'https://i.imgur.com/KYh1mTn.png',
-    price: 15, 
-    owner: 'Jane S.', 
-    rating: 4.2, // <-- ADDED
-    reviewCount: 13, // <-- ADDED
-  },
-  {
-    id: 'lipo-pack',
-    title: 'LI-PO BATTERY PACK (2S 7.4V)',
-    category: 'power',
-    desc: '...',
-    img: 'https.i.imgur.com/k5cY6p1.png',
-    price: 40, 
-    owner: 'Justin N.', 
-    rating: 4.9, // <-- ADDED
-    reviewCount: 4, // <-- ADDED
-  },
-];
-
-// ----- UI (Unchanged) -----
 export default function HomeScreen({ navigation }) {
-  const [query, setQuery] = useState('');
-  const [activeCat, setActiveCat] = useState('all');
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading] = useState(true); // For the initial screen load
+  const [refreshing, setRefreshing] = useState(false); // NEW: For the pull-to-refresh spinner
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('All');
+  
+  const { addToCart } = useCart(); 
 
-  const filtered = useMemo(() => {
-    const byCat = activeCat === 'all'
-      ? PRODUCTS
-      : PRODUCTS.filter(p => p.category === activeCat);
-    const q = query.trim().toLowerCase();
-    return q ? byCat.filter(p => p.title.toLowerCase().includes(q)) : byCat;
-  }, [query, activeCat]);
+  const categories = [
+    "All", "Microcontrollers", "Sensors", "Actuators", 
+    "Communication Modules", "Development Boards", "Power Modules", "Display Modules"
+  ];
 
-  // This function automatically passes the *entire* item object,
-  // including the new 'rating' and 'reviewCount' fields.
-  const handleItemPress = (product) => {
-    navigation.navigate('ProductDetail', { product: product });
+  // 1. Initial Load
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    setLoading(true);
+    await fetchInventory();
+    setLoading(false);
   };
 
-  // ----- Card Renderer (Unchanged) -----
-  const renderCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => handleItemPress(item)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.cardImageWrap}>
-        <Image source={{ uri: item.img }} style={styles.cardImage} resizeMode="contain" />
-        <View style={styles.badge}>
-          <View style={styles.badgeDot} />
-          <Text style={styles.badgeText}>AVAILABLE</Text>
+  // 2. Pull-to-Refresh logic
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchInventory();
+    setRefreshing(false);
+  }, []);
+
+  // Core fetch function used by both
+  const fetchInventory = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        navigation.replace('Welcome');
+        return;
+      }
+
+      const response = await fetch("http://192.168.5.95:8000/api/items/", {
+        headers: { "Authorization": `Token ${token}` }
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        setInventory(data);
+      } else {
+        Alert.alert("Error", "Failed to load marketplace.");
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Network Error", "Could not reach the database.");
+    }
+  };
+
+  const filteredInventory = inventory.filter(item => {
+    const itemName = item.title || "";
+    const itemCategory = item.category || "General";
+    
+    const matchesSearch = itemName.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = activeCategory === "All" || itemCategory === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  const renderItem = ({ item }) => {
+    const isOccupied = item.status === "Occupied";
+    const imageUrl = item.image 
+      ? (item.image.startsWith('http') ? item.image : `http://192.168.5.95:8000${item.image}`) 
+      : null;
+
+    return (
+      <TouchableOpacity 
+        style={styles.card} 
+        onPress={() => navigation.navigate('ProductDetail', { item })}
+      >
+        <View style={styles.imageContainer}>
+          <View style={[styles.statusBadge, { backgroundColor: isOccupied ? '#64748B' : '#10B981' }]}>
+            <Text style={styles.statusText}>{item.status || "AVAILABLE"}</Text>
+          </View>
+          {imageUrl ? (
+            <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+          ) : (
+            <View style={[styles.image, styles.placeholderImage]}>
+              <Text style={{color: '#94A3B8'}}>No Image</Text>
+            </View>
+          )}
         </View>
-      </View>
-      <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
-      <Text style={styles.priceText}>₱{item.price}/day</Text>
-    </TouchableOpacity>
-  );
 
-  // --- Stable functions for the header (Unchanged) ---
-  const stableSetQuery = useCallback((text) => {
-    setQuery(text);
-  }, []);
+        <View style={styles.cardInfo}>
+          <Text style={styles.itemTitle} numberOfLines={1}>{item.title}</Text>
+          <Text style={styles.itemCategory}>{item.category}</Text>
+          <Text style={styles.itemPrice}>₱{item.price} <Text style={styles.perDay}>/day</Text></Text>
+          
+          <TouchableOpacity 
+            style={[styles.addButton, isOccupied && styles.disabledButton]}
+            disabled={isOccupied}
+            onPress={() => {
+              addToCart(item);
+              Alert.alert("Added to Cart", `${item.title} has been added to your cart.`);
+            }}
+          >
+            <Text style={[styles.addButtonText, isOccupied && { color: '#94A3B8' }]}>
+              {isOccupied ? "Occupied" : "Add to Cart"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
-  const stableSetActiveCat = useCallback((catId) => {
-    setActiveCat(catId);
-  }, []);
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator size="large" color="#1E40AF" /></View>;
+  }
 
   return (
-    <View style={styles.wrap}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.white} />
+    <View style={styles.container}>
+      <View style={styles.searchContainer}>
+        <Feather name="search" size={20} color="#64748B" style={styles.searchIcon} />
+        <TextInput 
+          style={styles.searchInput}
+          placeholder="Search IoT devices..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
 
-      <HomeHeader
-        onQueryChange={stableSetQuery}
-        onCategoryChange={stableSetActiveCat}
-      />
+      <View style={styles.categoryContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {categories.map(cat => (
+            <TouchableOpacity 
+              key={cat} 
+              style={[styles.categoryTab, activeCategory === cat && styles.activeCategoryTab]}
+              onPress={() => setActiveCategory(cat)}
+            >
+              <Text style={[styles.categoryText, activeCategory === cat && styles.activeCategoryText]}>
+                {cat}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       <FlatList
-        data={filtered}
-        keyExtractor={(it) => it.id}
-        contentContainerStyle={styles.listPad}
+        data={filteredInventory}
+        keyExtractor={item => item.id.toString()}
+        renderItem={renderItem}
         numColumns={2}
-        columnWrapperStyle={{ gap: CARD_GAP }}
-        renderItem={renderCard}
-        showsVerticalScrollIndicator={false}
-        ListFooterComponent={<View style={{ height: 16 }} />}
+        contentContainerStyle={styles.listContent}
+        columnWrapperStyle={styles.columnWrapper}
+        ListEmptyComponent={<Text style={styles.emptyText}>No items found.</Text>}
+        // --- NEW: Pull-to-refresh props added here ---
+        refreshing={refreshing}
+        onRefresh={onRefresh}
       />
     </View>
   );
 }
 
-// ----- Styles (Unchanged) -----
-const NAVY = '#0B2B66';
 const styles = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: COLORS.white },
-  listPad: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 },
-  card: { width: CARD_W, borderRadius: 14, backgroundColor: NAVY, padding: 12, marginBottom: CARD_GAP },
-  cardImageWrap: { backgroundColor: '#fff', borderRadius: 10, paddingVertical: 10, alignItems: 'center', justifyContent: 'center' },
-  cardImage: { width: '92%', height: 80 },
-  badge: { position: 'absolute', top: 6, right: 6, backgroundColor: '#D1FAE5', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, flexDirection: 'row', alignItems: 'center' },
-  badgeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10B981', marginRight: 5 },
-  badgeText: { color: '#065F46', fontWeight: '700', fontSize: 10 },
-  cardTitle: { color: '#E5EDFF', marginTop: 10, fontWeight: '800', fontSize: 12 },
-  priceText: { color: '#FFE58A', fontSize: 14, fontWeight: 'bold', marginTop: 8, alignSelf: 'flex-start' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  searchContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', margin: 16, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0' },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, height: 45, fontSize: 15 },
+  categoryContainer: { paddingLeft: 16, marginBottom: 10 },
+  categoryTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: 'white', marginRight: 10, borderWidth: 1, borderColor: '#E2E8F0' },
+  activeCategoryTab: { backgroundColor: '#1E40AF', borderColor: '#1E40AF' },
+  categoryText: { color: '#64748B', fontWeight: '600' },
+  activeCategoryText: { color: 'white' },
+  listContent: { paddingHorizontal: 16, paddingBottom: 20 },
+  columnWrapper: { justifyContent: 'space-between' },
+  card: { width: '48%', backgroundColor: 'white', borderRadius: 8, marginBottom: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#E2E8F0' },
+  imageContainer: { width: '100%', height: 120, position: 'relative' },
+  image: { width: '100%', height: '100%' },
+  placeholderImage: { backgroundColor: '#E2E8F0', justifyContent: 'center', alignItems: 'center' },
+  statusBadge: { position: 'absolute', top: 8, right: 8, zIndex: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  statusText: { color: 'white', fontSize: 10, fontWeight: 'bold' },
+  cardInfo: { padding: 12 },
+  itemTitle: { fontWeight: '700', fontSize: 14, color: '#1E293B', marginBottom: 2 },
+  itemCategory: { fontSize: 12, color: '#64748B', marginBottom: 6 },
+  itemPrice: { fontSize: 14, fontWeight: 'bold', color: '#1E40AF', marginBottom: 10 },
+  perDay: { fontSize: 10, color: '#64748B', fontWeight: 'normal' },
+  addButton: { backgroundColor: '#F59E0B', paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
+  disabledButton: { backgroundColor: '#F1F5F9' },
+  addButtonText: { color: '#1E293B', fontWeight: 'bold', fontSize: 12 }
 });

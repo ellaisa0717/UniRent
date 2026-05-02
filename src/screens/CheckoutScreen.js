@@ -1,21 +1,20 @@
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { format } from 'date-fns';
-import React, { useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Image,
-  Platform,
   SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
+import { useCart } from '../context/CartContext'; // To clear the cart on success
 
-// Define colors
-const PRIMARY_BLUE = '#0029F3'; 
+const NAVY = '#0B2B66'; 
 const WHITE = '#FFFFFF';
 const GRAY_LIGHT_BG = '#F3F4F6';
 const GRAY_MEDIUM = '#6B7280';
@@ -25,210 +24,161 @@ const YELLOW_PRIMARY = '#FDB022';
 
 export default function CheckoutScreen({ route, navigation }) {
   const { items, total } = route.params;
+  const { clearCart } = useCart(); // Assuming you have this in your context!
 
-  const isSingleItemRent = items.length === 1;
-  const singleItem = isSingleItemRent ? items[0] : null;
-  const [quantity, setQuantity] = useState(isSingleItemRent ? singleItem.quantity : 1);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedLocker, setSelectedLocker] = useState("");
+  const [occupiedLockers, setOccupiedLockers] = useState([]);
+  const [isLoadingLockers, setIsLoadingLockers] = useState(true);
 
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(() => {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 2);
-    return tomorrow;
-  });
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  
-  const paymentMethod = 'GCash';
-  const [paymentType, setPaymentType] = useState('Full'); 
+  const lockerOptions = ["A1", "B2", "C3", "D4", "E5"];
 
-  const rentalDays = useMemo(() => {
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 1; 
-  }, [startDate, endDate]);
+  // 1. Fetch items to see which lockers are currently in use
+  useEffect(() => {
+    const fetchLockers = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const response = await fetch("http://192.168.5.95:8000/api/items/", {
+          headers: { "Authorization": `Token ${token}` }
+        });
+        const data = await response.json();
+        
+        if (response.ok) {
+          const inUse = data
+            .filter(item => item.status === "Occupied" && item.locker_label)
+            .map(item => item.locker_label);
+          setOccupiedLockers(inUse);
+        }
+      } catch (error) {
+        console.error("Error fetching lockers:", error);
+      } finally {
+        setIsLoadingLockers(false);
+      }
+    };
 
-  const finalTotalPrice = useMemo(() => {
-    if (isSingleItemRent) {
-      return singleItem.price * quantity * rentalDays;
+    fetchLockers();
+  }, []);
+
+  // 2. Handle the secure checkout process
+  const handleConfirmOrder = async () => {
+    if (!selectedLocker) {
+      Alert.alert("Action Required", "Please select an available IoT locker to proceed.");
+      return;
     }
-    return total * rentalDays; 
-  }, [isSingleItemRent, singleItem, quantity, total, rentalDays]);
 
-  const amountToPay = useMemo(() => {
-    if (paymentType === 'Downpayment') {
-      return finalTotalPrice / 2;
-    }
-    return finalTotalPrice;
-  }, [paymentType, finalTotalPrice]);
+    setIsProcessing(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const itemIds = items.map(item => item.id);
 
-  const onStartDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || startDate;
-    setShowStartDatePicker(Platform.OS === 'ios');
-    setStartDate(currentDate);
-    if (currentDate.getTime() >= endDate.getTime()) {
-      const newEndDate = new Date(currentDate);
-      newEndDate.setDate(newEndDate.getDate() + 1);
-      setEndDate(newEndDate);
-    }
-  };
+      const response = await fetch("http://192.168.5.95:8000/api/checkout/", {
+        method: "POST",
+        headers: {
+          "Authorization": `Token ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ 
+          item_ids: itemIds, 
+          locker_id: selectedLocker 
+        })
+      });
 
-  const onEndDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || endDate;
-    setShowEndDatePicker(Platform.OS === 'ios');
-    setEndDate(currentDate);
-  };
-  
-  // --- THIS IS THE FIX ---
-  // This function was missing
-  const handleUpdateQuantity = (amount) => {
-    const newQuantity = quantity + amount;
-    if (newQuantity > 0) {
-      setQuantity(newQuantity);
-    }
-  };
-  // --- END OF FIX ---
+      const data = await response.json();
 
-  const handlePay = () => {
-    let itemsToPay = items;
-    if (isSingleItemRent) {
-      itemsToPay = [{ ...singleItem, quantity: quantity }];
+      if (response.ok) {
+        Alert.alert("Order Confirmed!", `Your items will be assigned to Locker ${selectedLocker}.`);
+        if (clearCart) clearCart(); // Empty the cart state
+        
+        // Navigate back to the main tabs, specifically to the Dashboard
+        navigation.replace('HomeTabs', { screen: 'Dashboard' });
+      } else {
+        Alert.alert("Checkout Failed", data.error || "An error occurred.");
+      }
+    } catch (err) {
+      Alert.alert("Network Error", "Could not reach the server.");
+    } finally {
+      setIsProcessing(false);
     }
-    
-    navigation.navigate('Receipt', {
-      cartItems: itemsToPay,
-      totalPrice: finalTotalPrice,
-      amountPaid: amountToPay,
-      paymentType: paymentType,
-      rentalDates: {
-        startDate: format(startDate, 'MM/dd/yyyy'),
-        endDate: format(endDate, 'MM/dd/yyyy'),
-      },
-      paymentMethod: paymentMethod,
-    });
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={GRAY_LIGHT_BG} />
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+      <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
 
-        {/* Rental Period Section */}
+        {/* --- Locker Selection Section --- */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Rental Period</Text>
-           <TouchableOpacity style={styles.datePickerRow} onPress={() => setShowStartDatePicker(true)}>
-            <Text style={styles.dateLabel}>Start Date:</Text>
-            <Text style={styles.dateValue}>{format(startDate, 'MM/dd/yyyy')}</Text>
-            <Feather name="chevron-down" size={20} color={GRAY_MEDIUM} />
-          </TouchableOpacity>
-          {showStartDatePicker && (
-            <DateTimePicker
-              value={startDate}
-              mode="date"
-              display="default"
-              onChange={onStartDateChange}
-              minimumDate={new Date()}
-            />
-          )}
-          <View style={styles.divider} />
-          <TouchableOpacity style={styles.datePickerRow} onPress={() => setShowEndDatePicker(true)}>
-            <Text style={styles.dateLabel}>End Date:</Text>
-            <Text style={styles.dateValue}>{format(endDate, 'MM/dd/yyyy')}</Text>
-            <Feather name="chevron-down" size={20} color={GRAY_MEDIUM} />
-          </TouchableOpacity>
-          {showEndDatePicker && (
-            <DateTimePicker
-              value={endDate}
-              mode="date"
-              display="default"
-              onChange={onEndDateChange}
-              minimumDate={new Date(startDate.getTime() + 86400000)}
-            />
-          )}
-        </View>
-
-        {/* Rented Items Section */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Rental Items</Text>
-          {isSingleItemRent ? (
-            <View style={[styles.itemRow, styles.lastItemRow]}>
-              <Image source={{ uri: singleItem.img }} style={styles.itemImage} />
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemTitle}>{singleItem.title}</Text>
-                <Text style={styles.itemPrice}>₱{singleItem.price}/day</Text>
-              </View>
-              <View style={styles.quantityStepper}>
-                <TouchableOpacity onPress={() => handleUpdateQuantity(1)}>
-                  <Feather name="plus-circle" size={20} color={GRAY_MEDIUM} />
-                </TouchableOpacity>
-                <Text style={styles.quantityText}>{quantity}</Text>
-                <TouchableOpacity onPress={() => handleUpdateQuantity(-1)}>
-                  <Feather name="minus-circle" size={20} color={GRAY_MEDIUM} />
-                </TouchableOpacity>
-              </View>
-            </View>
+          <Text style={styles.sectionTitle}>Pickup Details</Text>
+          <Text style={{color: GRAY_MEDIUM, marginBottom: 15}}>Choose an available IoT Locker for pickup:</Text>
+          
+          {isLoadingLockers ? (
+            <ActivityIndicator size="small" color={NAVY} />
           ) : (
-            items.map((item, index) => (
-              <View 
-                key={item.id} 
-                style={[
-                  styles.itemRow, 
-                  index === items.length - 1 && styles.lastItemRow
-                ]}
-              >
-                <Image source={{ uri: item.img }} style={styles.itemImage} />
-                <View style={styles.itemDetails}>
-                  <Text style={styles.itemTitle}>{item.title}</Text>
-                  <Text style={styles.itemPrice}>₱{item.price}/day</Text>
-                </View>
-                <Text style={styles.itemQuantity}>x{item.quantity}</Text>
-              </View>
-            ))
+            <View style={styles.lockerGrid}>
+              {lockerOptions.map(locker => {
+                const isOccupied = occupiedLockers.includes(locker);
+                const isSelected = selectedLocker === locker;
+                
+                return (
+                  <TouchableOpacity
+                    key={locker}
+                    disabled={isOccupied}
+                    onPress={() => setSelectedLocker(locker)}
+                    style={[
+                      styles.lockerBtn,
+                      isSelected && styles.lockerBtnSelected,
+                      isOccupied && styles.lockerBtnOccupied
+                    ]}
+                  >
+                    <Text style={[
+                      styles.lockerText,
+                      isSelected && styles.lockerTextSelected,
+                      isOccupied && styles.lockerTextOccupied
+                    ]}>
+                      {locker} {isOccupied && "🔒"}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total ({rentalDays} {rentalDays === 1 ? 'day' : 'days'}):</Text>
-            <Text style={styles.totalValue}>₱{finalTotalPrice.toFixed(2)}</Text>
+
+          <View style={styles.paymentMethodBox}>
+            <Text style={{fontWeight: 'bold', color: TEXT_PRIMARY, marginBottom: 5}}>Payment Method</Text>
+            <Text style={{color: GRAY_MEDIUM}}>Cash on Pickup (Locker Kiosk)</Text>
           </View>
         </View>
 
-        {/* Payment Option Section */}
+        {/* --- Order Summary Section --- */}
         <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Payment Option</Text>
-          <TouchableOpacity 
-            style={styles.paymentOption} 
-            onPress={() => setPaymentType('Full')}
-          >
-            <Text style={styles.paymentText}>Full Payment</Text>
-            <MaterialCommunityIcons
-              name={paymentType === 'Full' ? 'checkbox-marked' : 'checkbox-blank-outline'}
-              size={24}
-              color={PRIMARY_BLUE}
-            />
-          </TouchableOpacity>
-          <View style={styles.divider} />
-          <TouchableOpacity 
-            style={styles.paymentOption} 
-            onPress={() => setPaymentType('Downpayment')}
-          >
-            <Text style={styles.paymentText}>Downpayment (50%)</Text>
-            <MaterialCommunityIcons
-              name={paymentType === 'Downpayment' ? 'checkbox-marked' : 'checkbox-blank-outline'}
-              size={24}
-              color={PRIMARY_BLUE}
-            />
-          </TouchableOpacity>
-        </View>
-        
-        {/* Payment Method Section */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Payment Method</Text>
-          <View style={styles.paymentOption}>
-            <Text style={styles.paymentText}>GCash</Text>
-            <MaterialCommunityIcons
-              name={'checkbox-marked'}
-              size={24}
-              color={PRIMARY_BLUE}
-            />
+          <Text style={styles.sectionTitle}>Order Summary</Text>
+          
+          {items.map((item, index) => {
+             const imageUrl = item.image 
+             ? (item.image.startsWith('http') ? item.image : `http://192.168.5.95:8000${item.image}`) 
+             : null;
+
+            return (
+              <View key={item.id} style={[styles.itemRow, index === items.length - 1 && styles.lastItemRow]}>
+                {imageUrl ? (
+                  <Image source={{ uri: imageUrl }} style={styles.itemImage} />
+                ) : (
+                  <View style={[styles.itemImage, {justifyContent: 'center', alignItems: 'center'}]}>
+                    <Text style={{fontSize: 10, color: GRAY_MEDIUM}}>No Image</Text>
+                  </View>
+                )}
+                <View style={styles.itemDetails}>
+                  <Text style={styles.itemTitle}>{item.title}</Text>
+                  <Text style={styles.itemPrice}>₱{item.price}</Text>
+                </View>
+              </View>
+            );
+          })}
+
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>Total Amount:</Text>
+            {/* The total passed from CartScreen already includes the ₱50 service fee */}
+            <Text style={styles.totalValue}>₱{total.toFixed(2)}</Text>
           </View>
         </View>
 
@@ -236,168 +186,53 @@ export default function CheckoutScreen({ route, navigation }) {
 
       {/* --- Footer - Pay Button --- */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.payButton} onPress={handlePay}>
-          <Text style={styles.payButtonText}>
-            Pay ₱{amountToPay.toFixed(2)}
-          </Text>
+        <TouchableOpacity 
+          style={[styles.payButton, (!selectedLocker || isProcessing) && {opacity: 0.6}]} 
+          onPress={handleConfirmOrder}
+          disabled={!selectedLocker || isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator color={TEXT_PRIMARY} />
+          ) : (
+            <Text style={styles.payButtonText}>
+              Confirm Rental (₱{total.toFixed(2)})
+            </Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
-// (All styles are unchanged)
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: GRAY_LIGHT_BG,
-  },
-  scrollViewContent: {
-    padding: 16,
-    paddingBottom: 100, 
-  },
-  sectionCard: {
-    backgroundColor: WHITE,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: TEXT_PRIMARY,
-    marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER_LIGHT,
-    paddingBottom: 10,
-  },
-  datePickerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  dateLabel: {
-    fontSize: 16,
-    color: TEXT_PRIMARY,
-    fontWeight: '500',
-  },
-  dateValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: TEXT_PRIMARY,
-    marginRight: 10,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: BORDER_LIGHT,
-    marginVertical: 5,
-  },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER_LIGHT,
-  },
-  lastItemRow: {
-    borderBottomWidth: 0,
-    marginBottom: 0,
-    paddingBottom: 8,
-  },
-  itemImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 12,
-    backgroundColor: GRAY_LIGHT_BG,
-  },
-  itemDetails: {
-    flex: 1,
-  },
-  itemTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: TEXT_PRIMARY,
-  },
-  itemPrice: {
-    fontSize: 13,
-    color: GRAY_MEDIUM,
-    marginTop: 2,
-  },
-  itemQuantity: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: TEXT_PRIMARY,
-  },
-  quantityStepper: {
-    alignItems: 'center',
-  },
-  quantityText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: TEXT_PRIMARY,
-    marginVertical: 8,
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: BORDER_LIGHT,
-  },
-  totalLabel: {
-    fontSize: 18,
-    color: TEXT_PRIMARY,
-    fontWeight: 'bold',
-  },
-  totalValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: PRIMARY_BLUE,
-  },
-  paymentOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  paymentText: {
-    fontSize: 16,
-    color: TEXT_PRIMARY,
-    fontWeight: '500',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: WHITE,
-    paddingTop: 16,
-    paddingBottom: 24, 
-    paddingHorizontal: 16,
-    borderTopWidth: 1,
-    borderTopColor: BORDER_LIGHT,
-  },
-  payButton: {
-    backgroundColor: YELLOW_PRIMARY,
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  payButtonText: {
-    color: TEXT_PRIMARY,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, backgroundColor: GRAY_LIGHT_BG },
+  scrollViewContent: { padding: 16, paddingBottom: 100 },
+  sectionCard: { backgroundColor: WHITE, borderRadius: 12, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 3, elevation: 3 },
+  sectionTitle: { fontSize: 18, fontWeight: 'bold', color: TEXT_PRIMARY, marginBottom: 15, borderBottomWidth: 1, borderBottomColor: BORDER_LIGHT, paddingBottom: 10 },
+  
+  // Locker Grid Styles
+  lockerGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'space-between', marginBottom: 20 },
+  lockerBtn: { width: '30%', paddingVertical: 15, borderRadius: 8, borderWidth: 1, borderColor: BORDER_LIGHT, alignItems: 'center', backgroundColor: WHITE },
+  lockerBtnSelected: { borderColor: YELLOW_PRIMARY, backgroundColor: '#FEF3C7', borderWidth: 2 },
+  lockerBtnOccupied: { backgroundColor: '#F1F5F9', borderColor: BORDER_LIGHT, opacity: 0.6 },
+  lockerText: { fontWeight: 'bold', color: TEXT_PRIMARY, fontSize: 16 },
+  lockerTextSelected: { color: '#B45309' },
+  lockerTextOccupied: { color: GRAY_MEDIUM },
+  
+  paymentMethodBox: { backgroundColor: GRAY_LIGHT_BG, padding: 15, borderRadius: 8, borderWidth: 1, borderColor: BORDER_LIGHT },
+  
+  itemRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: BORDER_LIGHT },
+  lastItemRow: { borderBottomWidth: 0, marginBottom: 0, paddingBottom: 8 },
+  itemImage: { width: 50, height: 50, borderRadius: 8, marginRight: 12, backgroundColor: GRAY_LIGHT_BG, borderWidth: 1, borderColor: BORDER_LIGHT },
+  itemDetails: { flex: 1 },
+  itemTitle: { fontSize: 15, fontWeight: '600', color: TEXT_PRIMARY },
+  itemPrice: { fontSize: 14, color: GRAY_MEDIUM, marginTop: 2 },
+  
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 16, borderTopWidth: 1, borderTopColor: BORDER_LIGHT },
+  totalLabel: { fontSize: 16, color: TEXT_PRIMARY, fontWeight: 'bold' },
+  totalValue: { fontSize: 20, fontWeight: 'bold', color: NAVY },
+  
+  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: WHITE, paddingTop: 16, paddingBottom: 24, paddingHorizontal: 16, borderTopWidth: 1, borderTopColor: BORDER_LIGHT },
+  payButton: { backgroundColor: YELLOW_PRIMARY, paddingVertical: 16, borderRadius: 10, alignItems: 'center' },
+  payButtonText: { color: TEXT_PRIMARY, fontSize: 18, fontWeight: 'bold' },
 });

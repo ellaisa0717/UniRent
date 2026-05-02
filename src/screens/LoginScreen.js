@@ -1,27 +1,54 @@
+import AsyncStorage from '@react-native-async-storage/async-storage'; // NEW: Required to save the token!
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { COLORS } from '../constants/colors';
-import CustomInput from '../components/CustomInput';
+import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import CustomButton from '../components/CustomButton';
+import CustomInput from '../components/CustomInput';
+import { COLORS } from '../constants/colors';
 
 export default function LoginScreen({ navigation }) {
-  const [email, setEmail] = useState('');
+  const [studentId, setStudentId] = useState(''); // FIXED: Changed to Student ID to match backend
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // NEW: Extra state for "Excellent" rating
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (!email || !password) {
+  const handleLogin = async () => {
+    if (!studentId || !password) {
       Alert.alert("Error", "Please fill in all fields.");
       return;
     }
 
-    setIsLoading(true); // Trigger visible UI update
-    
-    // Simulate a network request
-    setTimeout(() => {
+    setIsLoading(true);
+
+    try {
+      // FIXED: Pointed to the exact same IP (.95)
+      const response = await fetch("http://192.168.5.95:8000/api/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: studentId, // Django expects 'username'
+          password: password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // FIXED: Securely save the token to the device storage!
+        await AsyncStorage.setItem('token', data.token);
+        console.log("Token saved successfully!"); 
+        
+        setIsLoading(false);
+        navigation.replace('HomeTabs');
+      } else {
+        setIsLoading(false);
+        Alert.alert("Login Failed", data.error || "Invalid Student ID or password.");
+      }
+    } catch (error) {
       setIsLoading(false);
-      navigation.replace('HomeTabs');
-    }, 1500);
+      console.error("Network Error:", error);
+      Alert.alert("Network Error", "Cannot reach the server. Make sure your Mac and Phone are on the same Wi-Fi.");
+    }
   };
 
   return (
@@ -30,10 +57,11 @@ export default function LoginScreen({ navigation }) {
         <Text style={styles.logoText}>Uni<Text style={{color: COLORS.primary}}>Rent</Text></Text>
         
         <CustomInput 
-          label="Student Email" 
-          value={email} 
-          onChangeText={setEmail} 
-          placeholder="Enter email"
+          label="Student ID" 
+          value={studentId} 
+          onChangeText={setStudentId} 
+          placeholder="Enter Student ID (e.g., 202X-XXXXX)"
+          autoCapitalize="none"
         />
         <CustomInput 
           label="Password" 

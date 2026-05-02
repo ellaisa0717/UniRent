@@ -1,51 +1,68 @@
-import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import {
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import CustomInput from '../components/CustomInput';
 
-// Define colors from your theme
-const NAVY = '#0029F3';
+const NAVY = '#0B2B66';
 const WHITE = '#FFFFFF';
-const GRAY_LIGHT_BG = '#F3F4F6'; // Light background from your prototypes
-const GRAY_MEDIUM = '#6B7280';
+const GRAY_LIGHT_BG = '#F3F4F6'; 
 const TEXT_PRIMARY = '#111827';
-const BORDER_LIGHT = '#E5E7EB';
+const YELLOW_PRIMARY = '#FDB022';
 
-// This is a helper component for the list items
-const ProfileEditableItem = ({ label, value, onPress, isPassword = false }) => (
-  <TouchableOpacity style={styles.itemContainer} onPress={onPress}>
-    <Text style={styles.itemLabel}>{label}</Text>
-    <View style={styles.itemValueContainer}>
-      <Text style={isPassword ? styles.itemPassword : styles.itemValue}>
-        {value}
-      </Text>
-      <Feather name="chevron-right" size={20} color={GRAY_MEDIUM} />
-    </View>
-  </TouchableOpacity>
-);
+export default function EditProfileScreen({ route, navigation }) {
+  // Grab the data passed from the ProfileScreen
+  const { currentProfile } = route.params || {};
 
-export default function EditProfileScreen({ navigation }) {
-  // Dummy data held in state, so it can be changed
-  const [name, setName] = useState('Ellaisa Faith Apidol');
-  const [year, setYear] = useState('3rd Year');
-  const [major, setMajor] = useState('Information Technology');
+  const [formData, setFormData] = useState({
+    full_name: currentProfile?.full_name || '',
+    username: currentProfile?.username || '',
+    password: '',
+  });
   
-  // A placeholder image
-  const avatar = 'https://i.imgur.com/8Km9tcn.png';
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    // Logic to save data would go here
-    console.log('Saving profile...');
-    // Navigate back to the main profile screen after saving
-    navigation.goBack(); 
+  const handleSave = async () => {
+    if (!formData.full_name || !formData.username) {
+      Alert.alert("Error", "Name and Student ID cannot be empty.");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const token = await AsyncStorage.getItem('token');
+      
+      const response = await fetch("http://192.168.5.95:8000/api/update-profile/", {
+        method: "PUT",
+        headers: {
+          "Authorization": `Token ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert("Success", "Profile updated securely!");
+        navigation.goBack(); // Return to Profile screen to see the update
+      } else {
+        Alert.alert("Update Failed", data.error || "Failed to update profile.");
+      }
+    } catch (error) {
+      Alert.alert("Network Error", "Could not connect to the server.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -53,46 +70,47 @@ export default function EditProfileScreen({ navigation }) {
       <StatusBar barStyle="dark-content" backgroundColor={GRAY_LIGHT_BG} />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         
-        {/* Main content card */}
         <View style={styles.card}>
-          {/* Avatar Section */}
           <View style={styles.avatarSection}>
-            <Image source={{ uri: avatar }} style={styles.avatar} />
-            <TouchableOpacity>
-              <Text style={styles.changePhotoText}>Change photo</Text>
-            </TouchableOpacity>
+            <View style={styles.avatar}>
+               <Text style={{fontSize: 40}}>👤</Text>
+            </View>
           </View>
 
-          {/* Divider */}
-          <View style={styles.divider} />
-
-          {/* Form Items */}
-          <ProfileEditableItem
-            label="Name:"
-            value={name}
-            onPress={() => {}} // Add navigation to a 'Change Name' screen
-          />
-          <ProfileEditableItem
-            label="Password:"
-            value="•••••••••••••"
-            isPassword={true}
-            onPress={() => {}} // Add navigation to a 'Change Password' screen
-          />
-          <ProfileEditableItem
-            label="Year:"
-            value={year}
-            onPress={() => {}} // Show a picker/modal
-          />
-          <ProfileEditableItem
-            label="Major:"
-            value={major}
-            onPress={() => {}} // Show a picker/modal
-          />
+          <View style={styles.formSection}>
+            <CustomInput
+              label="Full Name"
+              value={formData.full_name}
+              onChangeText={(text) => setFormData({...formData, full_name: text})}
+            />
+            
+            <CustomInput
+              label="Student ID (Username)"
+              value={formData.username}
+              onChangeText={(text) => setFormData({...formData, username: text})}
+              autoCapitalize="none"
+            />
+            
+            <CustomInput
+              label="New Password"
+              placeholder="Leave blank to keep current password"
+              value={formData.password}
+              onChangeText={(text) => setFormData({...formData, password: text})}
+              secureTextEntry
+            />
+          </View>
         </View>
 
-        {/* Save Button */}
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save</Text>
+        <TouchableOpacity 
+          style={[styles.saveButton, isSaving && {opacity: 0.7}]} 
+          onPress={handleSave}
+          disabled={isSaving}
+        >
+          {isSaving ? (
+             <ActivityIndicator color={TEXT_PRIMARY} />
+          ) : (
+             <Text style={styles.saveButtonText}>Save Changes</Text>
+          )}
         </TouchableOpacity>
 
       </ScrollView>
@@ -100,84 +118,13 @@ export default function EditProfileScreen({ navigation }) {
   );
 }
 
-// --- Styles ---
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: GRAY_LIGHT_BG,
-  },
-  scrollContainer: {
-    padding: 16,
-  },
-  card: {
-    backgroundColor: WHITE,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  avatarSection: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: '#E9EFFF', // Light blue bg from prototype
-  },
-  avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    marginBottom: 12,
-  },
-  changePhotoText: {
-    fontSize: 14,
-    color: NAVY,
-    fontWeight: '600',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: BORDER_LIGHT,
-  },
-  itemContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 18,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER_LIGHT,
-  },
-  itemLabel: {
-    fontSize: 16,
-    color: TEXT_PRIMARY,
-    fontWeight: '500',
-  },
-  itemValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemValue: {
-    fontSize: 16,
-    color: GRAY_MEDIUM,
-    marginRight: 8,
-  },
-  itemPassword: {
-    fontSize: 16,
-    color: GRAY_MEDIUM,
-    marginRight: 8,
-    fontWeight: 'bold',
-  },
-  saveButton: {
-    backgroundColor: NAVY,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  saveButtonText: {
-    color: WHITE,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
+  container: { flex: 1, backgroundColor: GRAY_LIGHT_BG },
+  scrollContainer: { padding: 16 },
+  card: { backgroundColor: WHITE, borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  avatarSection: { alignItems: 'center', paddingVertical: 24, backgroundColor: '#E2E8F0' },
+  avatar: { width: 90, height: 90, borderRadius: 45, backgroundColor: WHITE, justifyContent: 'center', alignItems: 'center' },
+  formSection: { padding: 20 },
+  saveButton: { backgroundColor: YELLOW_PRIMARY, borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 24 },
+  saveButtonText: { color: TEXT_PRIMARY, fontSize: 16, fontWeight: 'bold' },
 });
