@@ -30,14 +30,12 @@ export default function HomeScreen({ navigation }) {
     setLoading(false);
   };
 
-  // 2. Pull-to-Refresh logic
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await fetchInventory();
     setRefreshing(false);
   }, []);
 
-  // Core fetch function used by both
   const fetchInventory = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -46,7 +44,7 @@ export default function HomeScreen({ navigation }) {
         return;
       }
 
-      const response = await fetch("http://192.168.5.95:8000/api/items/", {
+      const response = await fetch("http://10.237.137.191:8000/api/items/", {
         headers: { "Authorization": `Token ${token}` }
       });
       
@@ -74,7 +72,7 @@ export default function HomeScreen({ navigation }) {
   const renderItem = ({ item }) => {
     const isOccupied = item.status === "Occupied";
     const imageUrl = item.image 
-      ? (item.image.startsWith('http') ? item.image : `http://192.168.5.95:8000${item.image}`) 
+      ? (item.image.startsWith('http') ? item.image : `http://10.237.137.191:8000${item.image}`) 
       : null;
 
     return (

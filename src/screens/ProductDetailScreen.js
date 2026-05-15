@@ -30,7 +30,7 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   const isOccupied = product.status === "Occupied";
   const imageUrl = product.image 
-    ? (product.image.startsWith('http') ? product.image : `http://192.168.5.95:8000${product.image}`) 
+    ? (product.image.startsWith('http') ? product.image : `http://10.237.137.191:8000${product.image}`) 
     : null;
 
   const handleAddToCart = () => {

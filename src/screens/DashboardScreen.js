@@ -23,7 +23,7 @@ export default function DashboardScreen({ navigation }) {
         return;
       }
 
-      const response = await fetch("http://192.168.5.95:8000/api/my-rentals/", {
+      const response = await fetch("http://10.237.137.191:8000/api/my-rentals/", {
         headers: { "Authorization": `Token ${token}` }
       });
       
@@ -50,7 +50,7 @@ export default function DashboardScreen({ navigation }) {
           onPress: async () => {
             const token = await AsyncStorage.getItem('token');
             try {
-              const response = await fetch("http://192.168.5.95:8000/api/return-item/", {
+              const response = await fetch("http://10.237.137.191:8000/api/return-item/", {
                 method: "POST",
                 headers: {
                   "Authorization": `Token ${token}`,

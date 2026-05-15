@@ -1,12 +1,13 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'; // NEW: Required to save the token!
+import AsyncStorage from '@react-native-async-storage/async-storage'; 
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import { COLORS } from '../constants/colors';
+import { API_BASE_URL } from '../config';
 
 export default function LoginScreen({ navigation }) {
-  const [studentId, setStudentId] = useState(''); // FIXED: Changed to Student ID to match backend
+  const [studentId, setStudentId] = useState(''); 
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -19,14 +20,15 @@ export default function LoginScreen({ navigation }) {
     setIsLoading(true);
 
     try {
-      // FIXED: Pointed to the exact same IP (.95)
-      const response = await fetch("http://192.168.5.95:8000/api/login/", {
+      // 🟢 Now uses your dynamic Localtunnel link!
+      const response = await fetch(`${API_BASE_URL}/login/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          // 🔴 REMOVE the Bypass-Tunnel lines for now
         },
         body: JSON.stringify({
-          username: studentId, // Django expects 'username'
+          username: studentId, 
           password: password,
         }),
       });
@@ -34,7 +36,7 @@ export default function LoginScreen({ navigation }) {
       const data = await response.json();
 
       if (response.ok) {
-        // FIXED: Securely save the token to the device storage!
+        // Securely save the token to the device storage!
         await AsyncStorage.setItem('token', data.token);
         console.log("Token saved successfully!"); 
         
@@ -47,9 +49,9 @@ export default function LoginScreen({ navigation }) {
     } catch (error) {
       setIsLoading(false);
       console.error("Network Error:", error);
-      Alert.alert("Network Error", "Cannot reach the server. Make sure your Mac and Phone are on the same Wi-Fi.");
-    }
-  };
+      Alert.alert("Network Error", "Cannot reach the server.");
+    } // 🟢 ADDED MISSING BRACKET HERE
+  };  // 🟢 ADDED MISSING BRACKET HERE
 
   return (
     <View style={styles.container}>

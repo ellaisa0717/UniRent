@@ -48,7 +48,7 @@ export default function ProfileScreen({ navigation }) {
         return;
       }
 
-      const response = await fetch("http://192.168.5.95:8000/api/profile/", {
+      const response = await fetch("http://10.237.137.191:8000/api/profile/", {
         headers: { "Authorization": `Token ${token}` }
       });
       

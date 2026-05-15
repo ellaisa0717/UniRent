@@ -38,7 +38,7 @@ export default function CheckoutScreen({ route, navigation }) {
     const fetchLockers = async () => {
       try {
         const token = await AsyncStorage.getItem('token');
-        const response = await fetch("http://192.168.5.95:8000/api/items/", {
+        const response = await fetch("http://10.237.137.191:8000/api/items/", {
           headers: { "Authorization": `Token ${token}` }
         });
         const data = await response.json();
@@ -71,7 +71,7 @@ export default function CheckoutScreen({ route, navigation }) {
       const token = await AsyncStorage.getItem('token');
       const itemIds = items.map(item => item.id);
 
-      const response = await fetch("http://192.168.5.95:8000/api/checkout/", {
+      const response = await fetch("http://10.237.137.191:8000/api/checkout/", {
         method: "POST",
         headers: {
           "Authorization": `Token ${token}`,
@@ -155,7 +155,7 @@ export default function CheckoutScreen({ route, navigation }) {
           
           {items.map((item, index) => {
              const imageUrl = item.image 
-             ? (item.image.startsWith('http') ? item.image : `http://192.168.5.95:8000${item.image}`) 
+             ? (item.image.startsWith('http') ? item.image : `http://10.237.137.191:8000${item.image}`) 
              : null;
 
             return (

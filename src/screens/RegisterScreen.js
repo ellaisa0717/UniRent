@@ -26,7 +26,7 @@ export default function RegisterScreen({ navigation }) {
 
     try {
       // FIXED: Pointed to the exact same IP we used for the Web App (.95)
-      const response = await fetch("http://192.168.5.95:8000/api/register/", {
+      const response = await fetch("http://10.237.137.191:8000/api/register/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
