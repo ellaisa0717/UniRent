@@ -1,50 +1,53 @@
-# Welcome to your Expo app 👋
+# 🎓 UniRent - Campus Equipment Rental System
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+UniRent is a comprehensive, full-stack rental management platform designed for campus environments. It allows students to browse and securely check out equipment, while providing administrators with a robust set of tools to manage inventory, track rentals, and enforce role-based access.
 
-## Get started
+---
 
-1. Install dependencies
+## 🏆 Academic Requirements Met (Final PIT Rubric)
 
+This project was built to satisfy all requirements for the Application Development and Emerging Technologies (IT323) Final PIT. 
+
+### 1. Docker Containerization 🐳
+The Django REST Framework backend is fully containerized. 
+- **Files Included:** `Dockerfile` and `docker-compose.yml`
+- **Purpose:** Ensures a consistent, isolated development environment and seamless deployment.
+
+### 2. Security & Role-Based Access Control (RBAC) 🔐
+Implemented two major layers of security:
+- **JWT Authentication:** All API endpoints are secured using JSON Web Tokens (SimpleJWT). Users must be authenticated to interact with the system.
+- **Role-Based Access Control:** Custom permissions (`IsAdminOrReadOnly`) enforce strict boundaries. 
+  - *Students (Tenants)* can only view available items (GET) and manage their own specific rentals.
+  - *Staff (Admins)* have exclusive rights to create, update, and delete inventory (POST, PUT, DELETE).
+
+### 3. Full CRUD Operations 📦
+The system demonstrates complete Create, Read, Update, and Delete lifecycles:
+- **Create (POST):** Register users, create new inventory items (Admins), and check out equipment (Students).
+- **Read (GET):** Fetch global inventory, view personal user profiles, and retrieve active/historical rental transactions.
+- **Update (PUT/PATCH):** Update user profiles and change item statuses (e.g., from 'Available' to 'Occupied' upon checkout, or resetting locker labels upon return).
+- **Delete (DELETE):** Permanently remove rental transaction records.
+
+### 4. System Integration & Data Flow 🔄
+The architecture follows a strict decoupled data flow:
+- **Frontend (React Web / React Native Mobile) ➔ API (Django REST Framework) ➔ Database (SQLite).**
+
+---
+
+## 💻 Technology Stack
+* **Backend:** Python, Django, Django REST Framework
+* **Mobile Frontend:** React Native, Expo
+* **Web Frontend:** React.js 
+* **Database:** SQLite (Development)
+* **Authentication:** SimpleJWT (JSON Web Tokens)
+* **Infrastructure:** Docker, Docker Compose
+
+---
+
+## 🚀 Getting Started (Running the Backend via Docker)
+
+To run the API server locally using Docker, ensure you have Docker Desktop installed and follow these steps:
+
+1. **Clone the repository:**
    ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+   git clone <your-repository-url>
+   cd <your-backend-folder>
